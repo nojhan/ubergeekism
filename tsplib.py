@@ -134,7 +134,7 @@ def plot_segments( segments ):
         verts = [start,end,(0,0)]
         codes = [Path.MOVETO,Path.LINETO,Path.STOP]
         path = Path(verts, codes)
-        patch = patches.PathPatch(path, facecolor='none', lw=1)
+        patch = patches.PathPatch(path, edgecolor='green', lw=1)
         ax.add_patch(patch)
 
     ax.set_xlim(-50,50)
@@ -157,7 +157,7 @@ def plot_segments_tour( segments_1, segments_2 ):
         verts = [start,end,(0,0)]
         codes = [Path.MOVETO,Path.LINETO,Path.STOP]
         path = Path(verts, codes)
-        patch = patches.PathPatch(path, facecolor='0.5', lw=1)
+        patch = patches.PathPatch(path, edgecolor='blue', lw=1)
         ax.add_patch(patch)
 
     for segment in segments_2:
@@ -165,7 +165,7 @@ def plot_segments_tour( segments_1, segments_2 ):
         verts = [start,end,(0,0)]
         codes = [Path.MOVETO,Path.LINETO,Path.STOP]
         path = Path(verts, codes)
-        patch = patches.PathPatch(path, facecolor='1.0', lw=3)
+        patch = patches.PathPatch(path, edgecolor='red', lw=2)
         ax.add_patch(patch)
 
 
@@ -234,6 +234,8 @@ if __name__=="__main__":
     print "Read tour"
     with open(ftour,"r") as fd:
         tour = read_tour_index( fd )
+
+    print tour
 
     print "Build tour segments"
     tour_segments = []
