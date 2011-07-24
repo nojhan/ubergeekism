@@ -84,12 +84,12 @@ class TurtleLSystem(LindenmayerSystem):
         self.states.append( (x, y, h) )
 
     def restore(self):
-        turtle.up()
+        self.turtle.up()
         x, y, h = self.states.pop()
-        turtle.setx(x)
-        turtle.sety(y)
-        turtle.setheading(h)
-        turtle.down()
+        self.turtle.setx(x)
+        self.turtle.sety(y)
+        self.turtle.setheading(h)
+        self.turtle.down()
 
 
 class DumpTurtleLSystem(TurtleLSystem):
@@ -172,10 +172,10 @@ if __name__=="__main__":
     segment_size = 10
     float_rounding = 10
 
-    from turtle import Turtle
-    turtle = Turtle()
-    turtle.speed('fastest')
-    penrose = DumpTurtleLSystem(turtle, 
+    import Turtle
+    ttl = turtle.Turtle()
+    ttl.speed('fastest')
+    penrose = DumpTurtleLSystem(ttl, 
             axiom="[X]++[X]++[X]++[X]++[X]", 
             rules={
                 'F': "",
@@ -187,10 +187,7 @@ if __name__=="__main__":
             angle=36, heading=0, size=segment_size, rounding=float_rounding )
 
     penrose.draw( depth )
-    #print penrose
+    print penrose
 
-    #plot_segments( penrose.segments )
+    plot_segments( penrose.segments )
 
-    import tsplib
-    
-    tsplib.write_segments( penrose.segments, segment_size, depth, float_rounding, fd=sys.stdout )
