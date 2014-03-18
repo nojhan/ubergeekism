@@ -164,15 +164,15 @@ def plot_segments( segments ):
 
 if __name__=="__main__":
     import sys
-    
+
     depth = 1
     if len(sys.argv) > 1:
         depth = int( sys.argv[1] )
-    
+
     segment_size = 10
     float_rounding = 10
 
-    import Turtle
+    import turtle
     ttl = turtle.Turtle()
     ttl.speed('fastest')
     penrose = DumpTurtleLSystem(ttl, 
