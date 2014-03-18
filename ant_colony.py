@@ -7,16 +7,17 @@ from collections import Counter
 import path
 
 
-def log( *args ):
+def LOG( *args ):
     for msg in args:
         sys.stderr.write( str(msg) )
         sys.stderr.write(" ")
         sys.stderr.flush()
 
 
-def logn( *args ):
-    log( *args )
-    log("\n")
+def LOGN( *args ):
+    LOG( *args )
+    LOG("\n")
+
 
 def tour(lst):
     # consecutive pairs in lst  + last-to-first element
@@ -39,7 +40,7 @@ def cost( permutation, cost_func, cities ):
     return dist
 
 
-def initialize_pheromone_matrix( cities, init_value ):
+def initialize_pheromones( cities, init_value ):
     rows = {}
     for i in cities:
         cols = {}
@@ -51,12 +52,13 @@ def initialize_pheromone_matrix( cities, init_value ):
 
 def choose( cities, last, exclude, pheromones, w_heuristic, w_history, cost_func = graph_distance ):
     choices = []
-    for city in cities:
-        if city in exclude:
+    for current in cities:
+        if current in exclude:
+            # This is faster than "if current not in exclude"
             continue
-        c = {"city" : city}
-        c["history"]   = pheromones[last][city] ** w_history
-        c["distance"]  = cost_func( last, city, cities )
+        c = {"city" : current}
+        c["history"]   = pheromones[last][current] ** w_history
+        c["distance"]  = cost_func( last, current, cities )
         c["heuristic"] = (1.0 / c["distance"]) ** w_heuristic
         c["proba"] = c["history"] * c["heuristic"]
         choices.append(c)
@@ -116,22 +118,19 @@ def update_local( pheromones, candidate, w_pheromone, init_pheromone ):
         pheromones[j][i] = value
 
 
-def random_permutation( cities ):
+def search( cities, max_iterations, nb_ants, decay, w_heuristic, w_pheromone, w_history, c_greedy, cost_func = graph_distance ):
     # like random.shuffle(cities) but on a copy
-    return sorted( cities, key=lambda i: random.random())
-
-
-def search( max_iterations, nb_ants, decay, w_heuristic, w_pheromone, w_history, c_greedy, cities, cost_func = graph_distance ):
-    best = { "permutation" : random_permutation(cities) }
+    best = { "permutation" : sorted( cities, key=lambda i: random.random()) }
     best["cost"] = cost( best["permutation"], cost_func, cities )
+
     init_pheromone = 1.0 / float(len(cities)) * best["cost"]
-    pheromone = initialize_pheromone_matrix( cities, init_pheromone )
+    pheromone = initialize_pheromones( cities, init_pheromone )
 
     for i in range(max_iterations):
-        log( i )
+        LOG( i )
         solutions = []
         for j in range(nb_ants):
-            log( "." )
+            LOG( "." )
             candidate = {}
             candidate["permutation"] = walk( cities, pheromone, w_heuristic, w_history, c_greedy, cost_func )
             candidate["cost"] = cost( candidate["permutation"], cost_func, cities )
@@ -139,7 +138,7 @@ def search( max_iterations, nb_ants, decay, w_heuristic, w_pheromone, w_history,
                 best = candidate
             update_local( pheromone, candidate, w_pheromone, init_pheromone )
         update_global( pheromone, best, decay )
-        logn( best["cost"] )
+        LOGN( best["cost"] )
 
     return best
 
@@ -176,5 +175,5 @@ if __name__ == "__main__":
             ( 2,-2) : [( 2, 0),( 0,-2)],
     }
 
-    best = search( max_it, num_ants, decay, w_heur, w_local_phero, w_history, c_greed, G, cost_func = graph_distance )
+    best = search( G, max_it, num_ants, decay, w_heur, w_local_phero, w_history, c_greed, cost_func = graph_distance )
     print best["cost"], best["permutation"]
