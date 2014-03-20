@@ -140,7 +140,7 @@ def search( cities, max_iterations, nb_ants, decay, w_heuristic, w_pheromone, w_
         update_global( pheromone, best, decay )
         LOGN( best["cost"] )
 
-    return best
+    return best,pheromone
 
 
 if __name__ == "__main__":
@@ -175,5 +175,5 @@ if __name__ == "__main__":
             ( 2,-2) : [( 2, 0),( 0,-2)],
     }
 
-    best = search( G, max_it, num_ants, decay, w_heur, w_local_phero, w_history, c_greed, cost_func = graph_distance )
+    best,phero = search( G, max_it, num_ants, decay, w_heur, w_local_phero, w_history, c_greed, cost_func = graph_distance )
     print best["cost"], best["permutation"]
