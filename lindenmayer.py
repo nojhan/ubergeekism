@@ -138,29 +138,6 @@ class DumpTurtleLSystem(TurtleLSystem):
         return dump
 
 
-def plot_segments( segments ):
-
-    import matplotlib.pyplot as plot
-    from matplotlib.path import Path
-    import matplotlib.patches as patches
-    
-    fig = plot.figure()
-    ax = fig.add_subplot(111)
-
-    for segment in segments:
-        start,end = segment
-        verts = [start,end,(0,0)]
-        codes = [Path.MOVETO,Path.LINETO,Path.STOP]
-        path = Path(verts, codes)
-        patch = patches.PathPatch(path, facecolor='none', lw=1)
-        ax.add_patch(patch)
-
-    ax.set_xlim(-50,50)
-    ax.set_ylim(-50,50)
-
-    plot.show()
-
-
 
 if __name__=="__main__":
     import sys
