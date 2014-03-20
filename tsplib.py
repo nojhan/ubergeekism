@@ -255,7 +255,7 @@ if __name__=="__main__":
         tour_segments.append( ( nodes[tour[i]],nodes[tour[i+1]] ) )
         #print tour_segments[-1]
 
-    tour_segments.append( ( nodes[tour[i+1]], nodes[tour[0]] ) )
+    tour_segments.append( ( nodes[tour[len(tour)]], nodes[tour[0]] ) )
     #print tour_segments[-1]
     print len(tour_segments)
 
