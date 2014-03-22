@@ -8,6 +8,7 @@ import path
 
 
 def LOG( *args ):
+    """Print something on stderr and flush"""
     for msg in args:
         sys.stderr.write( str(msg) )
         sys.stderr.write(" ")
@@ -15,6 +16,7 @@ def LOG( *args ):
 
 
 def LOGN( *args ):
+    """Print something on stdeer, with a trailing new line, and flush"""
     LOG( *args )
     LOG("\n")
 
@@ -40,18 +42,9 @@ def cost( permutation, cost_func, cities ):
     return dist
 
 
-def initialize_pheromones( cities, init_value ):
-    rows = {}
-    for i in cities:
-        cols = {}
-        for j in cities:
-            cols[j] = init_value
-        rows[i] = cols
-    return rows
-
-
-def choose( cities, last, exclude, pheromones, w_heuristic, w_history, cost_func = graph_distance ):
+def look( cities, last, exclude, pheromones, w_heuristic, w_history, cost_func = graph_distance ):
     choices = []
+    # gather informations about possible moves
     for current in cities:
         if current in exclude:
             # This is faster than "if current not in exclude"
@@ -65,7 +58,7 @@ def choose( cities, last, exclude, pheromones, w_heuristic, w_history, cost_func
     return choices
 
 
-def proba_select( choices ):
+def proba_choose( choices ):
     s = float(sum( c["proba"] for c in choices ))
     if s == 0.0:
         return random.choice(choices)["city"]
@@ -79,24 +72,24 @@ def proba_select( choices ):
     return c[-1]["city"]
 
 
-def greedy_select( choices ):
+def greedy_choose( choices ):
     c = max( choices, key = lambda c : c["proba"] )
     return c["city"]
 
 
-def walk( cities, pheromone, w_heuristic, w_history, c_greedy, cost_func = graph_distance, ):
+def walk( cities, pheromones, w_heuristic, w_history, c_greedy, cost_func = graph_distance ):
     assert( len(cities) > 0 )
     # permutations are indices
     # randomly draw the first city index
     permutation = [ random.choice( cities.keys() ) ]
     # then choose the next ones to build the permutation
     while len(permutation) < len(cities):
-        choices = choose( cities, permutation[-1], permutation, pheromone, w_heuristic, w_history, cost_func )
+        choices = look( cities, permutation[-1], permutation, pheromones, w_heuristic, w_history, cost_func )
         do_greedy = ( random.random() <= c_greedy )
         if do_greedy:
-            next_city = greedy_select( choices )
+            next_city = greedy_choose( choices )
         else:
-            next_city = proba_select( choices )
+            next_city = proba_choose( choices )
         permutation.append( next_city )
 
     # assert no duplicates
@@ -104,18 +97,62 @@ def walk( cities, pheromone, w_heuristic, w_history, c_greedy, cost_func = graph
     return permutation
 
 
-def update_global( pheromones, candidate, decay ):
+def initialize_pheromones_whole( cities, init_value ):
+    rows = {}
+    for i in cities:
+        cols = {}
+        for j in cities:
+            cols[j] = init_value
+        rows[i] = cols
+    return rows
+
+
+def update_global_whole( pheromones, candidate, graph, decay ):
     for i,j in tour(candidate["permutation"]):
         value = ((1.0 - decay) * pheromones[i][j]) + (decay * (1.0/candidate["cost"]))
         pheromones[i][j] = value
         pheromones[j][i] = value
 
 
-def update_local( pheromones, candidate, w_pheromone, init_pheromone ):
+def update_local_whole( pheromones, candidate, graph, w_pheromone, init_pheromone ):
     for i,j in tour(candidate["permutation"]):
         value = ((1.0 - w_pheromone) * pheromones[i][j]) + (w_pheromone * init_pheromone)
         pheromones[i][j] = value
         pheromones[j][i] = value
+
+
+def initialize_pheromones_neighbors( cities, init_value ):
+    rows = {}
+    for i in cities:
+        cols = {}
+        for j in cities:
+            # set an init value for neighbors only
+            if j in cities[i]:
+                cols[j] = init_value
+            else: # else, there should be no edge
+                cols[j] = 0
+        rows[i] = cols
+    return rows
+
+
+def update_global_neighbors( pheromones, candidate, graph, decay ):
+    for ci,cj in tour(candidate["permutation"]):
+        # subpath between ci and cj
+        p,c = path.astar( graph, ci, cj )
+        # deposit pheromones on each edges of the subpath
+        for i,j in zip(p,p[1:]):
+            value = ((1.0 - decay) * pheromones[i][j]) + (decay * (1.0/candidate["cost"]))
+            pheromones[i][j] = value
+            pheromones[j][i] = value
+
+
+def update_local_neighbors( pheromones, candidate, graph, w_pheromone, init_pheromone ):
+    for ci,cj in tour(candidate["permutation"]):
+        p,c = path.astar( graph, ci, cj )
+        for i,j in zip(p,p[1:]):
+            value = ((1.0 - w_pheromone) * pheromones[i][j]) + (w_pheromone * init_pheromone)
+            pheromones[i][j] = value
+            pheromones[j][i] = value
 
 
 def search( cities, max_iterations, nb_ants, decay, w_heuristic, w_pheromone, w_history, c_greedy, cost_func = graph_distance ):
@@ -124,7 +161,7 @@ def search( cities, max_iterations, nb_ants, decay, w_heuristic, w_pheromone, w_
     best["cost"] = cost( best["permutation"], cost_func, cities )
 
     init_pheromone = 1.0 / float(len(cities)) * best["cost"]
-    pheromone = initialize_pheromones( cities, init_pheromone )
+    pheromones = initialize_pheromones_whole( cities, init_pheromone )
 
     for i in range(max_iterations):
         LOG( i )
@@ -132,15 +169,15 @@ def search( cities, max_iterations, nb_ants, decay, w_heuristic, w_pheromone, w_
         for j in range(nb_ants):
             LOG( "." )
             candidate = {}
-            candidate["permutation"] = walk( cities, pheromone, w_heuristic, w_history, c_greedy, cost_func )
+            candidate["permutation"] = walk( cities, pheromones, w_heuristic, w_history, c_greedy, cost_func )
             candidate["cost"] = cost( candidate["permutation"], cost_func, cities )
             if candidate["cost"] < best["cost"]:
                 best = candidate
-            update_local( pheromone, candidate, w_pheromone, init_pheromone )
-        update_global( pheromone, best, decay )
+            update_local_whole( pheromones, candidate, cities, w_pheromone, init_pheromone )
+        update_global_whole( pheromones, best, cities, decay )
         LOGN( best["cost"] )
 
-    return best,pheromone
+    return best,pheromones
 
 
 if __name__ == "__main__":
