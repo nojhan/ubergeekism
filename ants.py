@@ -4,7 +4,7 @@ import sys
 import math
 import random
 from collections import Counter
-import path
+import shortpath
 
 
 def LOG( *args ):
@@ -31,7 +31,7 @@ def euclidian_distance( ci, cj, graph = None):
     return math.sqrt( float(ci[0] - cj[0])**2 + float(ci[1] - cj[1])**2 )
 
 def graph_distance( ci, cj, graph ):
-    p,c = path.astar( graph, ci, cj )
+    p,c = shortpath.astar( graph, ci, cj )
     return c 
 
 

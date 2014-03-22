@@ -3,9 +3,9 @@
 import sys
 import turtle
 import lindenmayer
-import graph
-import ant_colony
-import path
+import utils
+import ants
+import shortpath
 import uberplot
 import matplotlib.pyplot as plot
 
@@ -39,7 +39,7 @@ with open("penrose_%i.segments" % depth, "w") as fd:
     fd.write( str(penrose) )
 
 print "Convert the segment list into an adjacency list graph"
-G = graph.graph( penrose.segments )
+G = utils.adjacency_from_set( penrose.segments )
 
 
 print "Solve the TSP with an Ant Colony Algorithm"
@@ -52,13 +52,13 @@ w_local_phero = 0.1
 c_greed = 0.9
 w_history = 1.0
 
-best,phero = ant_colony.search( G, max_it, num_ants, decay, w_heur, w_local_phero, w_history, c_greed, cost_func = ant_colony.graph_distance )
+best,phero = ants.search( G, max_it, num_ants, decay, w_heur, w_local_phero, w_history, c_greed, cost_func = ants.graph_distance )
 
 print "Transform the resulting nodes permutation into a path on the graph"
 # by finding the shortest path between two cities.
 traj = []
-for start,end in ant_colony.tour(best["permutation"]):
-    p,c = path.astar( G, start, end )
+for start,end in ants.tour(best["permutation"]):
+    p,c = shortpath.astar( G, start, end )
     traj += p
 print "traj",len(traj)
 
@@ -83,7 +83,7 @@ for i in phero:
         # uberplot.scatter_segments( ax, seg, color="red", alpha=0.5, linewidth=nph )
 
 # best tour
-uberplot.plot_segments( ax, ant_colony.tour(traj), color="red",  alpha=0.9, linewidth=3 )
+uberplot.plot_segments( ax, ants.tour(traj), color="red",  alpha=0.9, linewidth=3 )
 
 # tesselation
 tcol = "black"

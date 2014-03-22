@@ -1,5 +1,5 @@
 
-def graph( segments ):
+def adjacency_from_set( segments ):
     graph = {}
     for start,end in segments:
         graph[start] = graph.get( start, [] )
