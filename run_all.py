@@ -79,15 +79,18 @@ for i in phero:
         nph = phero[i][j]/maxph
         seg = [(i,j)]
         # print nph,seg
-        uberplot.plot_segments( ax, seg, edgecolor="red", alpha=0.03*nph, linewidth=7*nph )
+        uberplot.plot_segments( ax, seg, edgecolor="blue", alpha=0.01*nph, linewidth=1*nph )
         # uberplot.scatter_segments( ax, seg, color="red", alpha=0.5, linewidth=nph )
 
-# tour
-uberplot.plot_segments( ax, ant_colony.tour(traj), color="green",  alpha=0.9, linewidth=4 )
+# best tour
+uberplot.plot_segments( ax, ant_colony.tour(traj), color="red",  alpha=0.9, linewidth=3 )
 
 # tesselation
-uberplot.plot_segments( ax, penrose.segments, edgecolor="black", alpha=0.9, linewidth=1 )
-uberplot.scatter_segments( ax, penrose.segments,  color="black", alpha=0.9, linewidth=1 )
+tcol = "black"
+uberplot.plot_segments( ax, penrose.segments, edgecolor=tcol, alpha=0.9, linewidth=1 )
+uberplot.scatter_segments( ax, penrose.segments,  color=tcol, alpha=0.9, linewidth=1 )
+
+ax.set_aspect('equal')
 
 plot.show()
 
