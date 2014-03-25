@@ -5,27 +5,8 @@ import math
 import random
 from collections import Counter
 import shortpath
-
-
-def LOG( *args ):
-    """Print something on stderr and flush"""
-    for msg in args:
-        sys.stderr.write( str(msg) )
-        sys.stderr.write(" ")
-        sys.stderr.flush()
-
-
-def LOGN( *args ):
-    """Print something on stdeer, with a trailing new line, and flush"""
-    LOG( *args )
-    LOG("\n")
-
-
-def tour(lst):
-    # consecutive pairs in lst  + last-to-first element
-    for a,b in zip(lst, lst[1:] + [lst[0]]):
-        yield (a,b)
-
+from utils import tour
+from utils import LOG,LOGN
 
 def euclidian_distance( ci, cj, graph = None):
     return math.sqrt( float(ci[0] - cj[0])**2 + float(ci[1] - cj[1])**2 )

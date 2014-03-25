@@ -28,11 +28,11 @@ def plot_segments( ax, segments, **kwargs ):
         ax.add_patch(patch)
 
 
-def scatter_segments( ax, segments, color="black", alpha=1.0, linewidth=1.0 ):
+def scatter_segments( ax, segments, **kwargs  ):
     xy = [ ((i[0],j[0]),(i[1],j[1])) for (i,j) in segments]
     x = [i[0] for i in xy]
     y = [i[1] for i in xy]
-    ax.scatter( x,y, s=20, marker='o', color=color, alpha=alpha, linewidth=linewidth)
+    ax.scatter( x,y, s=20, marker='o', **kwargs)
 
 
 if __name__=="__main__":
