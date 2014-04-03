@@ -1,5 +1,13 @@
 
 import sys
+import math
+
+def x( point ):
+    return point[0]
+
+def y( point ):
+    return point[1]
+
 
 def LOG( *args ):
     """Print something on stderr and flush"""
@@ -37,4 +45,8 @@ def tour(lst):
     # consecutive pairs in lst  + last-to-first element
     for a,b in zip(lst, lst[1:] + [lst[0]]):
         yield (a,b)
+
+
+def euclidian_distance( ci, cj, graph = None):
+    return math.sqrt( float(ci[0] - cj[0])**2 + float(ci[1] - cj[1])**2 )
 
