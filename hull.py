@@ -1,6 +1,6 @@
 
 import operator
-from utils import x,y,euclidian_distance
+from utils import x,y,euclidian_distance,LOG,LOGN
 
 # Based on the excellent article by Tom Switzer <thomas.switzer@gmail.com>
 # http://tomswitzer.net/2010/12/2d-convex-hulls-chans-algorithm/
@@ -173,13 +173,11 @@ def convex_hull(points):
     """Returns the points on the convex hull of points in CCW order."""
 
     # Increasing guesses for the hull size.
-    sizes = []
-    for t in range(len(points)):
-        sizes.append( 2 ** (2 ** t) )
-
-    for guess in sizes:
+    for guess in ( 2**(2**t) for t in range(len(points)) ):
+        LOG( "Guess",guess)
         hulls = []
         for i in range(0, len(points), guess):
+            LOG(".")
             # Split the points into chunks of (roughly) the guess.
             chunk = points[i:i + guess]
             # Find the corresponding convex hull of these chunks.
@@ -190,11 +188,14 @@ def convex_hull(points):
 
         # Ensure we stop after no more than "guess" iterations.
         for __ in range(guess):
+            LOG("*")
             pair = next_hull_pt_pair(hulls, hullpt_pairs[-1])
             if pair == hullpt_pairs[0]:
                 # Return the points in sequence
+                LOGN("o")
                 return [hulls[h][i] for h,i in hullpt_pairs]
             hullpt_pairs.append(pair)
+        LOGN("x")
 
 
 if __name__ == "__main__":
