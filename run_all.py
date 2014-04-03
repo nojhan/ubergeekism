@@ -4,6 +4,7 @@ import sys
 import turtle
 import argparse
 import matplotlib.pyplot as plot
+from itertools import ifilterfalse as filter_if_not
 
 import ants
 import utils
@@ -148,21 +149,24 @@ else:
     points = utils.vertices_from_set(penrose_segments)
     triangles = triangulation.delaunay_bowyer_watson( points, do_plot = False )
 
-    LOGN( "\tRemove triangles that have at least one edge in common with the convex hull" )
+    LOGN( "\tCompute the convex hull of",len(points),"points" )
     # Should convert the set into a list
     hull = hull.convex_hull( list(points) )
     hull_edges = list(utils.tour(hull))
-    LOGN( "\t\tHull",len(hull_edges),"edges" )
-    removed = set()
-    for triangle in triangles:
-        for edge in utils.tour(list(triangle)):
-            if edge in hull_edges:
-                removed.add( triangle )
-    LOGN( "\t\tRemove", len(removed), "triangles" )
-    for it in removed:
-        triangles.remove(it)
+    LOGN( "\t\tHull of",len(hull_edges),"edges" )
 
-    triangulation_edges = triangulation.edges_of( triangles )
+    LOGN( "\tRemove triangles that have at least one edge in common with the convex hull" )
+    def adjoin_hull(triangle):
+        for (p,q) in utils.tour(list(triangle)):
+            if (p,q) in hull_edges or (q,p) in hull_edges:
+                return True
+        return False
+
+    # Filter out edges that are in hull_edges
+    triangulated = list(filter_if_not( adjoin_hull, triangles ))
+    LOGN( "\t\tRemoved", len(triangles)-len(triangulated), "triangles" )
+
+    triangulation_edges = triangulation.edges_of( triangulated )
     with open("d%i_triangulation.segments" % depth, "w") as fd:
         for p0,p1 in triangulation_edges:
             fd.write("%f %f %f %f\n" % (p0[0],p0[1],p1[0],p1[1]) )
