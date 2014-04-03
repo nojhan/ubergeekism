@@ -1,7 +1,7 @@
 
 import sys
 import math
-from utils import tour,LOG,LOGN
+from utils import tour,LOG,LOGN,x,y
 from itertools import ifilterfalse as filter_if_not
 
 # Based on http://paulbourke.net/papers/triangulate/
@@ -11,12 +11,6 @@ from itertools import ifilterfalse as filter_if_not
 # Written by Paul Bourke
 # Presented at Pan Pacific Computer Conference, Beijing, China.
 # January 1989
-
-def x( point ):
-    return point[0]
-
-def y( point ):
-    return point[1]
 
 def mid( xy, pa, pb ):
     return ( xy(pa) + xy(pb) ) / 2.0
@@ -80,7 +74,7 @@ def circumcircle( triangle, epsilon = sys.float_info.epsilon ):
 
 
 def in_circle( p, center, radius, epsilon  = sys.float_info.epsilon ):
-    """Return True if the given point p is in the circumscribe circle of the given triangle"""
+    """Return True if the given point p is in the given circle"""
 
     assert( len(p) == 2 )
     cx,cy = center
@@ -104,6 +98,7 @@ def in_circumcircle( p, triangle, epsilon  = sys.float_info.epsilon ):
 
 
 def bounds( vertices ):
+    """Return the iso-axis rectangle enclosing the given points"""
     # find vertices set bounds
     xmin = x(vertices[0])
     ymin = y(vertices[0])
@@ -120,114 +115,145 @@ def bounds( vertices ):
 
 
 def edges_of( triangulation ):
+    """Return a list containing the edges of the given list of 3-tuples of points"""
     edges = []
     for t in triangulation:
-        for e in utils.tour(list(t)):
+        for e in tour(list(t)):
             edges.append( e )
     return edges
 
 
-def delaunay_bowyer_watson( points, epsilon = sys.float_info.epsilon, supert=20, do_plot = True ):
+def supertriangle( vertices, delta = 0.1 ):
+    """Return a super-triangle that encloses all given points.
+    The super-triangle has its base at the bottom and encloses the bounding box at a distance given by:
+        delta*max(width,height)
+    """
 
-    if do_plot and len(points) > 10:
-        print "WARNING it is a bad idea to plot each steps of a triangulation of many points"
-        return []
-
-    # sort points first on the x-axis, then on the y-axis
-    vertices = sorted( points )
-
+    # Iso-rectangle bounding box.
     (xmin,ymin),(xmax,ymax) = bounds( vertices )
 
     dx = xmax - xmin
     dy = ymax - ymin
     dmax = max( dx, dy )
     xmid = (xmax + xmin) / 2.0
-    ymid = (ymax + ymin ) / 2.0
+
+    supertri = ( ( xmin-dy-dmax*delta, ymin-dmax*delta ),
+                 ( xmax+dy+dmax*delta, ymin-dmax*delta ),
+                 ( xmid              , ymax+(xmax-xmid)+dmax*delta ) )
+
+    return supertri
 
 
-    # compute the super triangle, that encompasses all the vertices
-    supertri = ( (xmid-supert*dmax, ymid-dmax ),
-                 (xmid, ymid+supert*dmax),
-                 (xmid+supert*dmax, ymid-dmax) )
+def delaunay_bowyer_watson( points, supertri = None, superdelta = 0.1, epsilon = sys.float_info.epsilon,
+        do_plot = None, plot_filename = "Bowyer-Watson_%i.png" ):
+    """Return the Delaunay triangulation of the given points
 
-    LOGN( "super-triangle",supertri )
+    epsilon: used for floating point comparisons, two points are considered equals if their distance is < epsilon.
+    do_plot: if not None, plot intermediate steps on this matplotlib object and save them as images named: plot_filename % i
+    """
 
-    # it is the first triangle of the list
+    if do_plot and len(points) > 10:
+        print "WARNING it is a bad idea to plot each steps of a triangulation of many points"
+
+    # Sort points first on the x-axis, then on the y-axis.
+    vertices = sorted( points )
+
+    # LOGN( "super-triangle",supertri )
+    if not supertri:
+        supertri = supertriangle( vertices, superdelta )
+
+    # It is the first triangle of the list.
     triangles = [ supertri ]
 
     completed = { supertri: False }
 
     # The predicate returns true if at least one of the vertices
-    # is also found in the supertriangle
+    # is also found in the supertriangle.
     def match_supertriangle( tri ):
         if tri[0] in supertri or \
            tri[1] in supertri or \
            tri[2] in supertri:
             return True
 
-    # insert vertices one by one
-    it=0
+    # Returns the base of each plots, with points, current triangulation, super-triangle and bounding box.
+    def plot_base(ax,vi = len(vertices), vertex = None):
+        ax.set_aspect('equal')
+        # regular points
+        scatter_x = [ p[0] for p in vertices[:vi]]
+        scatter_y = [ p[1] for p in vertices[:vi]]
+        ax.scatter( scatter_x,scatter_y, s=30, marker='o', facecolor="black")
+        # super-triangle vertices
+        scatter_x = [ p[0] for p in list(supertri)]
+        scatter_y = [ p[1] for p in list(supertri)]
+        ax.scatter( scatter_x,scatter_y, s=30, marker='o', facecolor="lightgrey", edgecolor="lightgrey")
+        # current vertex
+        if vertex:
+            ax.scatter( vertex[0],vertex[1], s=30, marker='o', facecolor="red", edgecolor="red")
+        # current triangulation
+        uberplot.plot_segments( ax, edges_of(triangles), edgecolor = "blue", alpha=0.5, linestyle='solid' )
+        # bounding box
+        (xmin,ymin),(xmax,ymax) = bounds(vertices)
+        uberplot.plot_segments( ax, tour([(xmin,ymin),(xmin,ymax),(xmax,ymax),(xmax,ymin)]), edgecolor = "magenta", alpha=0.2, linestyle='dotted' )
+
+
+    # Insert vertices one by one.
+    LOG("Insert vertices: ")
+    if do_plot:
+        it=0
     for vi,vertex in enumerate(vertices):
-        LOGN( "\tvertex",vertex )
+        # LOGN( "\tvertex",vertex )
         assert( len(vertex) == 2 )
 
         if do_plot:
-            fig = plot.figure()
-            ax = fig.add_subplot(111)
-            scatter_x = [ p[0] for p in vertices[:vi]+list(supertri)]
-            scatter_y = [ p[1] for p in vertices[:vi]+list(supertri)]
-            ax.scatter( scatter_x,scatter_y, s=30, marker='o', facecolor="black")
-            ax.scatter( vertex[0],vertex[1], s=30, marker='o', facecolor="red")
-            uberplot.plot_segments( ax, edges_of(triangles), edgecolor = "blue", alpha=0.3, linestyle='dashed' )
+            ax = do_plot.add_subplot(111)
+            plot_base(ax,vi,vertex)
 
         # All the triangles whose circumcircle encloses the point to be added are identified,
         # the outside edges of those triangles form an enclosing polygon.
 
-        # forget previous candidate polygon's edges
+        # Forget previous candidate polygon's edges.
         enclosing = []
 
         removed = []
         for triangle in triangles:
-            LOGN( "\t\ttriangle",triangle )
+            # LOGN( "\t\ttriangle",triangle )
             assert( len(triangle) == 3 )
 
-            # if completed has a key, test it, else return False
+            # Do not consider triangles already tested.
+            # If completed has a key, test it, else return False.
             if completed.get( triangle, False ):
-                LOGN( "\t\t\tAlready completed" )
+                # LOGN( "\t\t\tAlready completed" )
                 # if do_plot:
                     # uberplot.plot_segments( ax, tour(list(triangle)), edgecolor = "magenta", alpha=1, lw=1, linestyle='dotted' )
                 continue
 
-            LOGN( "\t\t\tCircumcircle" ) 
+            # LOGN( "\t\t\tCircumcircle" ) 
             assert( triangle[0] != triangle[1] and triangle[1] != triangle [2] and triangle[2] != triangle[0] )
             center,radius = circumcircle( triangle, epsilon )
 
-            # if it match Delaunay's conditions
+            # If it match Delaunay's conditions.
             if x(center) < x(vertex) and math.sqrt((x(vertex)-x(center))**2) > radius:
-                LOGN( "\t\t\tMatch Delaunay, mark as completed" ) 
+                # LOGN( "\t\t\tMatch Delaunay, mark as completed" ) 
                 completed[triangle] = True
 
-            # if the current vertex is inside the circumscribe circle of the current triangle
-            # add the current triangle's edges to the candidate polygon
+            # If the current vertex is inside the circumscribe circle of the current triangle,
+            # add the current triangle's edges to the candidate polygon.
             if in_circle( vertex, center, radius, epsilon ):
-                LOGN( "\t\t\tIn circumcircle, add to enclosing polygon",triangle )
+                # LOGN( "\t\t\tIn circumcircle, add to enclosing polygon",triangle )
                 if do_plot:
-                    # if not match_supertriangle( triangle ):
-                    circ = plot.Circle(center, radius, facecolor='yellow', edgecolor="orange", alpha=0.1)
+                    circ = plot.Circle(center, radius, facecolor='yellow', edgecolor="orange", alpha=0.2, clip_on=False)
                     ax.add_patch(circ)
 
                 for p0,p1 in tour(list(triangle)):
-                    # then add this edge to the polygon enclosing the vertex
+                    # Then add this edge to the polygon enclosing the vertex,
                     enclosing.append( (p0,p1) )
-                # and remove the corresponding triangle from the current triangulation
+                # and remove the corresponding triangle from the current triangulation.
                 removed.append( triangle )
                 completed.pop(triangle,None)
 
             elif do_plot:
-                # if not match_supertriangle( triangle ):
-                circ = plot.Circle(center, radius, facecolor='lightgrey', edgecolor="grey", alpha=0.1)
+                circ = plot.Circle(center, radius, facecolor='lightgrey', edgecolor="grey", alpha=0.2, clip_on=False)
                 ax.add_patch(circ)
-
 
         # end for triangle in triangles
 
@@ -235,77 +261,70 @@ def delaunay_bowyer_watson( points, epsilon = sys.float_info.epsilon, supert=20,
         # new triangles are formed between the point to be added and
         # each outside edge of the enclosing polygon. 
 
-        # actually remove triangles
+        # Actually remove triangles.
         for triangle in removed:
-            # if do_plot:
-                # if not match_supertriangle( triangle ):
-                # uberplot.plot_segments( ax, tour(list(triangle)), edgecolor = "orange", alpha=0.3, lw=2 )
-
             triangles.remove(triangle)
 
 
-        # remove duplicated edges
-        # this leaves the edges of the enclosing polygon only,
+        # Remove duplicated edges.
+        # This leaves the edges of the enclosing polygon only,
         # because enclosing edges are only in a single triangle,
         # but edges inside the polygon are at least in two triangles.
-        # duplicated = []
-        # for i,ei in enumerate(enclosing):
-        #     for j,ej in enumerate(enclosing,i+1):
-        #         if (ei[0] == ej[1] and ei[1] == ej[0]) or (ei[0] == ej[0] and ei[1] == ej[1]):
-        #             duplicated.append( ei )
-        # for e in duplicated:
-        #     enclosing.remove(e)
         hull = []
         for i,(p0,p1) in enumerate(enclosing):
+            # Clockwise edges can only be in the remaining part of the list.
+            # Search for counter-clockwise edges as well.
             if (p0,p1) not in enclosing[i+1:] and (p1,p0) not in enclosing:
                 hull.append((p0,p1))
+            elif do_plot:
+                uberplot.plot_segments( ax, [(p0,p1)], edgecolor = "white", alpha=1, lw=1, linestyle='dotted' )
+
+
 
         if do_plot:
             uberplot.plot_segments( ax, hull, edgecolor = "red", alpha=1, lw=1, linestyle='solid' )
 
 
-        # create new triangles using the current vertex and the enclosing hull
-        # All candidates should be arranged in clockwise order!
-        LOGN( "\t\tCreate new triangles" )
+        # Create new triangles using the current vertex and the enclosing hull.
+        # LOGN( "\t\tCreate new triangles" )
         for p0,p1 in hull:
             assert( p0 != p1 )
-            # if p0 != vertex and p1 != vertex:
-            # triangle = tuple(sorted([p0,p1,vertex]))
             triangle = tuple([p0,p1,vertex])
-            LOGN("\t\t\tNew triangle",triangle)
+            # LOGN("\t\t\tNew triangle",triangle)
             triangles.append( triangle )
             completed[triangle] = False
 
-            if do_plot: # linestyle = ['solid' | 'dashed' | 'dashdot' | 'dotted']
-                uberplot.plot_segments( ax, tour(list(triangle)), edgecolor = "green", alpha=0.3, linestyle='solid' )
-
-
-        with open("triangulation_%i.dat" % it, 'w') as fd:
-            for triangle in triangles:
-                for edge in tour(list(triangle)):
-                    coords = tuple([coord for point in edge for coord in point])
-                    fd.write( "%f %f %f %f\n" % coords )
+            if do_plot:
+                uberplot.plot_segments( ax, [(p0,vertex),(p1,vertex)], edgecolor = "green", alpha=1, linestyle='solid' )
 
         if do_plot:
-            # ax.set_ylim([-100,200])
-            # ax.set_xlim([-100,200])
-            plot.savefig("triangulation_%i.png" % it, dpi=300)
-            plot.close()
+            plot.savefig( plot_filename % it, dpi=150)
+            plot.clf()
 
-        it+=1
+            it+=1
+        LOG(".")
 
     # end for vertex in vertices
+    LOGN(" done")
 
 
-    # Remove triangles that have at least one of the supertriangle vertices
-    LOGN( "\tRemove super-triangles" ) 
+    # Remove triangles that have at least one of the supertriangle vertices.
+    # LOGN( "\tRemove super-triangles" ) 
 
-    # filter out elements for which the predicate is False
-    # here: *keep* elements that *do not* have a common vertex
-    triangulation = filter_if_not( match_supertriangle, triangles )
+    # Filter out elements for which the predicate is False,
+    # here: *keep* elements that *do not* have a common vertex.
+    # The filter is a generator, so we must make a list with it to actually get the data.
+    triangulation = list(filter_if_not( match_supertriangle, triangles ))
+
+    if do_plot:
+            ax = do_plot.add_subplot(111)
+            plot_base(ax)
+            uberplot.plot_segments( ax, edges_of(triangles), edgecolor = "red", alpha=0.5, linestyle='solid' )
+            uberplot.plot_segments( ax, edges_of(triangulation), edgecolor = "blue", alpha=1, linestyle='solid' )
+            plot.savefig( plot_filename % it, dpi=150)
+            plot.clf()
 
     return triangulation
-
 
 
 if __name__ == "__main__":
@@ -313,26 +332,30 @@ if __name__ == "__main__":
     import utils
     import uberplot
     import matplotlib.pyplot as plot
-    from matplotlib.path import Path
-    import matplotlib.patches as patches
 
-    scale = 100
-    nb = 10
-    points = [ (scale*random.random(),scale*random.random()) for i in range(nb)]
-    # points = [
-    #         (0,40),
-    #         (100,60),
-    #         (40,0),
-    #         (50,100),
-    #         (90,10),
-    #         ]
+    if len(sys.argv) > 1:
+        scale = 100
+        nb = int(sys.argv[1])
+        points = [ (scale*random.random(),scale*random.random()) for i in range(nb)]
+    else:
+        points = [
+                (0,40),
+                (100,60),
+                (40,0),
+                (50,100),
+                (90,10),
+                # (50,50),
+                ]
 
-    triangles = delaunay_bowyer_watson( points, epsilon=10e-4, supert=3 )
+    fig = plot.figure()
+
+    triangles = delaunay_bowyer_watson( points, do_plot = fig )
 
     edges = edges_of( triangles )
 
-    fig = plot.figure()
     ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
     uberplot.scatter_segments( ax, edges, facecolor = "red" )
-    uberplot.plot_segments( ax, edges, edgecolor = "blue", alpha=0.2 )
+    uberplot.plot_segments( ax, edges, edgecolor = "blue" )
     plot.show()
+
