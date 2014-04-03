@@ -14,13 +14,53 @@ def LOG( *args ):
     for msg in args:
         sys.stderr.write( str(msg) )
         sys.stderr.write(" ")
-        sys.stderr.flush()
+    sys.stderr.flush()
 
 
 def LOGN( *args ):
     """Print something on stdeer, with a trailing new line, and flush"""
     LOG( *args )
     LOG("\n")
+
+
+def load_points( filename ):
+    points = []
+    with open(filename) as fd:
+        for line in fd:
+            if line.strip()[0] != "#":
+                p = tuple([float(i) for i in line.split()])
+                assert(len(p)==2)
+                points.append( p )
+    return points
+
+
+def load_segments( filename ):
+    segments = []
+    with open(filename) as fd:
+        for line in fd:
+            if line.strip()[0] != "#":
+                edge = [float(i) for i in line.split()]
+                assert(len(edge)==4)
+                segments.append( ((edge[0],edge[1]),(edge[2],edge[3])) )
+    return segments
+
+
+def load_matrix( filename ):
+    matrix = {}
+    with open(filename) as fd:
+        for line in fd:
+            if line.strip()[0] != "#":
+                skey,svals = line.split(":")
+                key = tuple((float(i) for i in skey.split(',')))
+                col = {}
+                for stri in svals.split():
+                    sk,sv = stri.split("=")
+                    value = float(sv)
+                    k = tuple((float(i) for i in sk.split(",")))
+                    col[k] = value
+                matrix[key] = col
+        assert(len(matrix) == len(matrix[key]))
+    return matrix
 
 
 def adjacency_from_set( segments ):
