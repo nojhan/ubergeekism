@@ -98,20 +98,25 @@ def right_tangent(hull, p):
             return icenter
 
         # If the tangent touches the left point in the window.
-        elif ( c_side == TURN_LEFT  and ( l_next == TURN_RIGHT or l_prev == l_next) ) \
-          or ( c_side == TURN_RIGHT and   c_prev == TURN_RIGHT ):
+        elif c_side == TURN_LEFT  and ( l_next == TURN_RIGHT or l_prev == l_next ) \
+          or c_side == TURN_RIGHT and   c_prev == TURN_RIGHT:
             # Do not consider points at the RIGHT of the center.
             iright = icenter
 
-        # If the tangent touches the right point in the window.
-        else:
+        # If the tangent touches the right point in the window,
+        # but this is not the last possible tangent.
+        elif icenter+1 < iright:
             # Do not consider points at the LEFT of the center.
-            ileft = icenter + 1
+            ileft = icenter+1
             # Switch sides: if the turn toward the point before the center
             # was to the right, search to the left and conversely.
             l_prev = -1 * c_next
             # Update the turn to the next left point.
             l_next = turn( p, hull[ileft], hull[ at(ileft+1) ] )
+
+        # There is no more possible tangent, the hull contains a straight segment.
+        else:
+            return ileft
 
     return ileft
 
@@ -177,7 +182,7 @@ def convex_hull(points):
         LOG( "Guess",guess)
         hulls = []
         for i in range(0, len(points), guess):
-            LOG(".")
+            # LOG(".")
             # Split the points into chunks of (roughly) the guess.
             chunk = points[i:i + guess]
             # Find the corresponding convex hull of these chunks.
