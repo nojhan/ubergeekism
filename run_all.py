@@ -15,6 +15,7 @@ import uberplot
 import shortpath
 import lindenmayer
 import triangulation
+import voronoi
 
 parser = argparse.ArgumentParser()
 
@@ -32,6 +33,8 @@ parser.add_argument('-m', "--pheromones", help="Load a pheromones matrix from a 
 
 parser.add_argument('-g', "--triangulation", help="Do not compute the Delaunay triangulation but load it from a file",
         default=None, action='store', type=str, metavar="SEGMENTS")
+parser.add_argument('-v', "--voronoi", help="Do not compute the Voronoï diagram but load it from a file",
+        default=None, action='store', type=str, metavar="POINTS")
 
 args = parser.parse_args()
 
@@ -182,6 +185,22 @@ else:
 
 
 ########################################################################
+# VORONOÏ
+########################################################################
+
+if args.voronoi:
+    voronoi_centers = utils.load_points(args.voronoi)
+
+else:
+    LOGN( "Compute the nodes of the Voronoï diagram" )
+    voronoi_centers = voronoi.centers(triangulated)
+
+    with open("d%i_voronoi_centers.points" % depth, "w") as fd:
+        for p in voronoi_centers:
+            fd.write( "%f %f\n" % (p[0],p[1]) )
+
+
+########################################################################
 # PLOT
 ########################################################################
 
@@ -218,6 +237,9 @@ uberplot.scatter_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, line
 
 # triangulation
 uberplot.plot_segments( ax, triangulation_edges, edgecolor="green", alpha=0.2, linewidth=1 )
+
+# Voronoï centers
+uberplot.scatter_points( ax, voronoi_centers, edgecolor="none", facecolor="green", linewidth=0 )
 
 ax.set_aspect('equal')
 
