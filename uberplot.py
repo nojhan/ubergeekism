@@ -6,6 +6,7 @@ import matplotlib.pyplot as plot
 from matplotlib.path import Path
 import matplotlib.patches as patches
 
+import utils
 
 def parse_segments( filename ):
     segments = []
@@ -33,6 +34,12 @@ def scatter_segments( ax, segments, **kwargs  ):
     x = [i[0] for i in xy]
     y = [i[1] for i in xy]
     ax.scatter( x,y, s=20, marker='o', **kwargs)
+
+
+def scatter_points( ax, points, **kwargs  ):
+    x = [i[0] for i in points]
+    y = [i[1] for i in points]
+    ax.scatter( x,y, s=20, marker='o', **kwargs) 
 
 
 if __name__=="__main__":
