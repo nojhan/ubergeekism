@@ -45,6 +45,17 @@ def load_segments( filename ):
     return segments
 
 
+def load_triangles( filename ):
+    triangles = []
+    with open(filename) as fd:
+        for line in fd:
+            if line.strip()[0] != "#":
+                tri = [float(i) for i in line.split()]
+                assert(len(tri)==6)
+                triangles.append( ((tri[0],tri[1]),(tri[2],tri[3]),(tri[4],tri[5])) )
+    return triangles
+
+
 def load_matrix( filename ):
     matrix = {}
     with open(filename) as fd:
