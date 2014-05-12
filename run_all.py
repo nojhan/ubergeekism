@@ -243,5 +243,15 @@ uberplot.scatter_points( ax, voronoi_centers, edgecolor="none", facecolor="green
 
 ax.set_aspect('equal')
 
+
+# transparent background in SVG
+fig.patch.set_visible(False)
+ax.axis('off')
+plot.savefig("ubergeekism.svg", dpi=600)
+
+ax.axis('off')
+fig.patch.set_visible(True)
+fig.patch.set_facecolor('white')
+plot.savefig("ubergeekism.png", dpi=600)
 plot.show()
 
