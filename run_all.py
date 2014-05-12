@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#encoding: utf-8
 
 import sys
 import turtle
@@ -157,13 +158,21 @@ else:
 
     LOGN( "\tRemove triangles that have at least one edge in common with the convex hull" )
     def adjoin_hull(triangle):
+        """Return True if the given triangle has at least one edge that is in the set hull_edges."""
         for (p,q) in utils.tour(list(triangle)):
             if (p,q) in hull_edges or (q,p) in hull_edges:
                 return True
         return False
 
+    def acute_triangle(triangle):
+        """Return True if the center of the circumcircle of the given triangle lies inside the triangle.
+           That is if the triangle is acute."""
+        return triangulation.in_triangle( triangulation.circumcircle(triangle)[0], triangle )
+
     # Filter out edges that are in hull_edges
-    triangulated = list(filter_if_not( adjoin_hull, triangles ))
+    tri_nohull = list(filter_if_not( adjoin_hull, triangles ))
+    # Filter out triangles that are obtuse
+    triangulated = list(filter_if_not( acute_triangle, tri_nohull ))
     LOGN( "\t\tRemoved", len(triangles)-len(triangulated), "triangles" )
 
     triangulation_edges = triangulation.edges_of( triangulated )
