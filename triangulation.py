@@ -97,6 +97,28 @@ def in_circumcircle( p, triangle, epsilon  = sys.float_info.epsilon ):
     return in_circle( p, (cx,cy), r, epsilon )
 
 
+def in_triangle( p0, triangle, exclude_edges = True ):
+    """Return True if the given point lies inside the given triangle"""
+
+    p1,p2,p3 = triangle
+
+    # Compute the barycentric coordinates
+    alpha = ( (y(p2) - y(p3)) * (x(p0) - x(p3)) + (x(p3) - x(p2)) * (y(p0) - y(p3)) )   \
+          / ( (y(p2) - y(p3)) * (x(p1) - x(p3)) + (x(p3) - x(p2)) * (y(p1) - y(p3)) )
+    beta  = ( (y(p3) - y(p1)) * (x(p0) - x(p3)) + (x(p1) - x(p3)) * (y(p0) - y(p3)) )   \
+          / ( (y(p2) - y(p3)) * (x(p1) - x(p3)) + (x(p3) - x(p2)) * (y(p1) - y(p3)) )
+    gamma = 1.0 - alpha - beta
+
+    if exclude_edges:
+        # If all of alpha, beta, and gamma are strictly greater than 0 and lower than 1,
+        # (and thus if any of them are lower or equal than 0 or greater than 1)
+        # then the point p0 strictly lies within the triangle.
+        return any( x <= 0 or 1 <= x for x in (alpha, beta, gamma ) )
+    else:
+        # If the inequality is strict, then the point may lies on an edge.
+        return any( x <  0 or 1 <  x for x in (alpha, beta, gamma ) )
+
+
 def bounds( vertices ):
     """Return the iso-axis rectangle enclosing the given points"""
     # find vertices set bounds
