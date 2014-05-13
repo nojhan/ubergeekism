@@ -159,23 +159,26 @@ else:
     hull_edges = list(utils.tour(hull))
     LOGN( "\t\tHull of",len(hull_edges),"edges" )
 
-    LOGN( "\tRemove triangles that have at least one edge in common with the convex hull" )
-    def adjoin_hull(triangle):
-        """Return True if the given triangle has at least one edge that is in the set hull_edges."""
-        for (p,q) in utils.tour(list(triangle)):
-            if (p,q) in hull_edges or (q,p) in hull_edges:
-                return True
-        return False
+    LOGN( "\tRemove triangles that are not sub-parts of the Penrose tiling" )
+    # def adjoin_hull(triangle):
+    #     """Return True if the given triangle has at least one edge that is in the set hull_edges."""
+    #     for (p,q) in utils.tour(list(triangle)):
+    #         if (p,q) in hull_edges or (q,p) in hull_edges:
+    #             return True
+    #     return False
 
     def acute_triangle(triangle):
         """Return True if the center of the circumcircle of the given triangle lies inside the triangle.
            That is if the triangle is acute."""
         return triangulation.in_triangle( triangulation.circumcircle(triangle)[0], triangle )
 
+    # FIXME at depth 3, some triangles have an edge in the convex hull...
     # Filter out edges that are in hull_edges
-    tri_nohull = list(filter_if_not( adjoin_hull, triangles ))
+    # tri_nohull = list(filter_if_not( adjoin_hull, triangles ))
     # Filter out triangles that are obtuse
-    triangulated = list(filter_if_not( acute_triangle, tri_nohull ))
+    # triangulated = list(filter_if_not( acute_triangle, tri_nohull ))
+
+    triangulated = list(filter_if_not( acute_triangle, triangles ))
     LOGN( "\t\tRemoved", len(triangles)-len(triangulated), "triangles" )
 
     triangulation_edges = triangulation.edges_of( triangulated )
@@ -189,15 +192,18 @@ else:
 ########################################################################
 
 if args.voronoi:
-    voronoi_centers = utils.load_points(args.voronoi)
+    # voronoi_centers = utils.load_points(args.voronoi)
+    pass
 
 else:
-    LOGN( "Compute the nodes of the Voronoï diagram" )
-    voronoi_centers = voronoi.centers(triangulated)
+    # LOGN( "Compute the nodes of the Voronoï diagram" )
+    voronoi_graph = voronoi.dual( triangulated )
+    voronoi_edges = voronoi.edges_of( voronoi_graph )
+    voronoi_centers = voronoi_graph.keys()
 
-    with open("d%i_voronoi_centers.points" % depth, "w") as fd:
-        for p in voronoi_centers:
-            fd.write( "%f %f\n" % (p[0],p[1]) )
+    # with open("d%i_voronoi_centers.points" % depth, "w") as fd:
+    #     for p in voronoi_centers:
+    #         fd.write( "%f %f\n" % (p[0],p[1]) )
 
 
 ########################################################################
@@ -238,8 +244,9 @@ uberplot.scatter_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, line
 # triangulation
 uberplot.plot_segments( ax, triangulation_edges, edgecolor="green", alpha=0.2, linewidth=1 )
 
-# Voronoï centers
-uberplot.scatter_points( ax, voronoi_centers, edgecolor="none", facecolor="green", linewidth=0 )
+# Voronoï
+uberplot.scatter_points( ax, voronoi_centers, edgecolor="magenta", facecolor="white", s=200, alpha=0.5 )
+uberplot.plot_segments( ax, voronoi_edges, edgecolor="magenta", alpha=0.2, linewidth=1 )
 
 ax.set_aspect('equal')
 

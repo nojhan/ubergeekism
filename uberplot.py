@@ -39,7 +39,8 @@ def scatter_segments( ax, segments, **kwargs  ):
 def scatter_points( ax, points, **kwargs  ):
     x = [i[0] for i in points]
     y = [i[1] for i in points]
-    ax.scatter( x,y, s=20, marker='o', **kwargs) 
+    # ax.scatter( x,y, s=20, marker='o', **kwargs) 
+    ax.scatter( x,y, marker='o', **kwargs) 
 
 
 if __name__=="__main__":
