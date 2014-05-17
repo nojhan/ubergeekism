@@ -14,18 +14,22 @@ Until now, the following algorithms/data structure/concepts are used:
 - travelling salesman problem,
 - ant colony algorithm,
 - A\* shortest path,
+- circumcircle of a triangle,
 - Delaunay triangulation,
 - Bowyer-Watson algorithm,
-- convex hull,
-- Chan's algorithm,
+- lines and segments intersections,
 - graph (adjacency list, adjacency matrix),
 - hash table.
+
+And the following ones are implemented but not used:
+- convex hull,
+- Chan's algorithm,
 
 The current code is written in Python.
 
 
-Penrose graph
--------------
+Penrose tiling drawing
+----------------------
 
 The main shape visible on the image is a Penrose tiling (type P3), which is a
 **non-periodic tiling** with an absurd level of coolness.
@@ -54,8 +58,8 @@ once and returns to the origin city. This is the **Travelling Salesman
 Problem**. We use an **Ant Colony Optimization** algorithm to (try) to solve it.
 
 Because each city is not connected to every other cities, we need to find the
-shortest path between two cities. This is done with the help of the **A-star**
-algorithm.
+shortest path between two cities. This is done with the help of the famously
+cool **A-star** algorithm.
 
 The ant colony algorithm output a path that connect every cities, which is drawn
 on the image, but it also stores a so-called pheromones matrix, which can be
@@ -70,25 +74,35 @@ compute how each segment is related to the diamonds to rebuild the tiling
 corresponding to all those edges.
 
 Fortunately, computing a **Delaunay triangulation** of the Penrose vertices
-brings back the Penrose graph (how cool is that!?) and stores plain shapes
-(triangles) instead of unordered segments. This is done thanks to the
-**Bowyer-Watson algorithm**.
+brings back  a triangular subgraph of the Penrose graph (how cool is that!?) and
+stores plain shapes (triangles) instead of unordered segments. This is done
+thanks to the **Bowyer-Watson algorithm**.
 
 But this triangulation contains edges that link the set of exterior vertices,
-which are not in the Penrose graph. This is solved by computing the **convex
+which are not in the Penrose tiling. This is solved by ~~computing the **convex
 hull**, with the **Chan's algorithm**, and removing the triangles that contains
-those edges from the triangulation.
+those edges from the triangulation~~ removing obtuse triangles.
+
+
+Penrose graph
+-------------
+
+We now want to connect each diamond to its neighbour, so as to build the Penrose
+graph itself. One way to do that is to compute the **Voronoï diagram** of the
+previous Delaunay triangulation. But we really want the Voronoï diagram of the
+Penrose tiling (with diamonds), not its triangulation (with, well, triangles).
+
+We thus need to merge each edge of the Voronoï graph that do not cross a segment
+of the Penrose tiling into a single node, while preserving its neighbours. We
+thus need to compute **segments intersection** (which does not seems so cool but
+really is) and find a way to reduce the graph.
 
 
 TODO
 ----
 
 More coolness:
-- Compute the **Voronoï diagram** from the triangulation,
-- Remove Voronoï edges that intersects with the Penrose graph,
 - **quad trees** may be useful somewhere to query neighbors points?,
-- The center of remaining segments is the center of the Penrose tiles,
-- Build back the neighborhood of those tiles from the Voronoï diagram,
 - Draw the neighborhood with **splines** across the center of diamonds
   segments,
 - Run a **cellular automata** on this Penrose tiling,
