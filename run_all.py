@@ -150,7 +150,7 @@ if args.triangulation:
 
 else:
     LOGN( "Compute the triangulation of the penrose vertices" )
-    points = utils.vertices_from_set(penrose_segments)
+    points = utils.vertices_of(penrose_segments)
     triangles = triangulation.delaunay_bowyer_watson( points, do_plot = False )
 
     LOGN( "\tCompute the convex hull of",len(points),"points" )
@@ -197,9 +197,14 @@ if args.voronoi:
 
 else:
     # LOGN( "Compute the nodes of the Voronoï diagram" )
-    voronoi_graph = voronoi.dual( triangulated )
+    voronoi_tri_graph = voronoi.dual(triangulated)
+    voronoi_tri_edges = voronoi.edges_of( voronoi.dual(triangulated) )
+    voronoi_tri_centers = voronoi_tri_graph.keys()
+
+    voronoi_graph = voronoi.merge_enclosed( voronoi_tri_graph, penrose_segments )
     voronoi_edges = voronoi.edges_of( voronoi_graph )
     voronoi_centers = voronoi_graph.keys()
+
 
     # with open("d%i_voronoi_centers.points" % depth, "w") as fd:
     #     for p in voronoi_centers:
@@ -245,8 +250,8 @@ uberplot.scatter_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, line
 uberplot.plot_segments( ax, triangulation_edges, edgecolor="green", alpha=0.2, linewidth=1 )
 
 # Voronoï
-uberplot.scatter_points( ax, voronoi_centers, edgecolor="magenta", facecolor="white", s=200, alpha=0.5 )
-uberplot.plot_segments( ax, voronoi_edges, edgecolor="magenta", alpha=0.2, linewidth=1 )
+uberplot.scatter_points( ax, voronoi_centers, edgecolor="magenta", facecolor="white", s=200, alpha=1 )
+uberplot.plot_segments( ax, voronoi_edges, edgecolor="magenta", alpha=1, linewidth=1 )
 
 ax.set_aspect('equal')
 

@@ -1,7 +1,9 @@
 #/usr/bin/env python
+#encoding: utf-8
 
 from utils import tour,LOG,LOGN,x,y
 import triangulation
+import geometry
 
 def nodes( triangles ):
     """Compute the locations of the centers of all the circumscribed circles of the given triangles"""
@@ -41,6 +43,7 @@ def neighbours( triangle, polygons ):
 
 
 def dual( triangles ):
+    """Compute the dual Voronoï graph of a triangulation."""
     graph = {}
 
     def add_edge( current, neighbor ):
@@ -73,8 +76,79 @@ def edges_of( graph ):
             if k != n and (k,n) not in edges and (n,k) not in edges:
                 # edges.add( (k,n) )
                 edges.append( (k,n) )
-
     return edges
+
+
+def merge_nodes( graph, n0, n1, n2 ):
+    """Merge n0 and n1 nodes as n2 within the given graph."""
+
+    # Assert that the old nodes are in the graph
+    # and that they are linked by an edge.
+    assert( n0 in graph )
+    assert( n1 in graph[n0] )
+    assert( n1 in graph )
+    assert( n0 in graph[n1] )
+    assert( n0 != n1 )
+
+    # Remove and save the neigbhours of the old nodes.
+    n0_ngb = graph.pop(n0)
+    n1_ngb = graph.pop(n1)
+    # Insert the new node along with the old neighbours.
+    # We use a set to ensure that there is no duplicated nodes.
+    neighbours = list(set(n0_ngb + n1_ngb))
+    # Filter out duplicate of the considered nodes.
+    # Because the new node cannot be linked to the old nodes, nor to itself.
+    graph[n2] = filter( lambda n: n not in (n0,n1,n2), neighbours )
+
+    for node in graph:
+        # Replace occurences of old nodes as neighbours by the new node.
+        while n0 in graph[node]:
+            graph[node].remove(n0)
+            graph[node].append(n2)
+        while n1 in graph[node]:
+            graph[node].remove(n1)
+            graph[node].append(n2)
+
+    # assert that any neighbour is also a node of the graph.
+    for node in graph:
+        for neighbour in graph[node]:
+            assert( neighbour in graph )
+            assert( neighbour != node )
+
+    return graph
+
+
+def merge_enclosed( graph, segments ):
+    """Merge nodes of the given graph that are on edges that do not intersects with the given segments."""
+    i=0
+    LOG("Merge",len(graph),"nodes")
+    while i < len(graph.keys()):
+        node = graph.keys()[i]
+
+        j=0
+        altered = False
+        while j < len(graph[node]):
+            neighbour = graph[node][j]
+            assert( neighbour in graph )
+            edge = (node,neighbour)
+
+            if not any( geometry.segment_intersection(edge,seg) for seg in segments ):
+                graph = merge_nodes( graph, edge[0], edge[1], geometry.middle(*edge) )
+                altered = True
+                LOG(".")
+                break
+            else:
+                j+=1
+                continue
+
+        if altered:
+            i = 0
+        else:
+            i+=1
+
+    LOGN("as",len(graph),"enclosed nodes")
+
+    return graph
 
 
 if __name__ == "__main__":
