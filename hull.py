@@ -1,6 +1,7 @@
 
 import operator
-from utils import x,y,euclidian_distance,LOG,LOGN
+from utils import LOG,LOGN
+from geometry import x,y,euclidian_distance
 
 # Based on the excellent article by Tom Switzer <thomas.switzer@gmail.com>
 # http://tomswitzer.net/2010/12/2d-convex-hulls-chans-algorithm/

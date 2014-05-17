@@ -1,13 +1,7 @@
 
 import sys
 import math
-
-def x( point ):
-    return point[0]
-
-def y( point ):
-    return point[1]
-
+from geometry import x,y
 
 def LOG( *args ):
     """Print something on stderr and flush"""
@@ -84,7 +78,7 @@ def adjacency_from_set( segments ):
     return graph
 
 
-def vertices_from_set( segments ):
+def vertices_of( segments ):
     vertices = set()
     for start,end in segments:
         vertices.add(start)
@@ -97,7 +91,4 @@ def tour(lst):
     for a,b in zip(lst, lst[1:] + [lst[0]]):
         yield (a,b)
 
-
-def euclidian_distance( ci, cj, graph = None):
-    return math.sqrt( float(ci[0] - cj[0])**2 + float(ci[1] - cj[1])**2 )
 

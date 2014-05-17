@@ -1,13 +1,6 @@
 
 import math
-
-def euclidian_distance(node, goal):
-    def x(node):
-        return node[0]
-    def y(node):
-        return node[1]
-
-    return math.sqrt( (x(node) - x(goal))**2 + (y(node) - y(goal))**2)
+from geometry import x,y,euclidian_distance
 
 
 def astar(graph, start, goal, cost = euclidian_distance, heuristic = euclidian_distance):

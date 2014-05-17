@@ -1,8 +1,10 @@
 
 import sys
 import math
-from utils import tour,LOG,LOGN,x,y
 from itertools import ifilterfalse as filter_if_not
+
+from utils import tour,LOG,LOGN,x,y
+from geometry import mid, middle
 
 # Based on http://paulbourke.net/papers/triangulate/
 # Efficient Triangulation Algorithm Suitable for Terrain Modelling
@@ -11,12 +13,6 @@ from itertools import ifilterfalse as filter_if_not
 # Written by Paul Bourke
 # Presented at Pan Pacific Computer Conference, Beijing, China.
 # January 1989
-
-def mid( xy, pa, pb ):
-    return ( xy(pa) + xy(pb) ) / 2.0
-
-def middle( pa, pb ):
-    return mid(x,pa,pb),mid(y,pa,pb)
 
 def mtan( pa, pb ):
     return -1 * ( x(pa) - x(pb) ) / ( y(pa) - y(pb) )
@@ -97,7 +93,7 @@ def in_circumcircle( p, triangle, epsilon  = sys.float_info.epsilon ):
     return in_circle( p, (cx,cy), r, epsilon )
 
 
-def in_triangle( p0, triangle, exclude_edges = True ):
+def in_triangle( p0, triangle, exclude_edges = False ):
     """Return True if the given point lies inside the given triangle"""
 
     p1,p2,p3 = triangle
