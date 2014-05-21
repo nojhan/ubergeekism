@@ -1,0 +1,8 @@
+*.pyc
+*.mat
+*.points
+*.segments
+*.png
+*.svg
+*.triangles
+*.graph
