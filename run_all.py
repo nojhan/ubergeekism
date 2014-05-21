@@ -10,6 +10,7 @@ from itertools import ifilterfalse as filter_if_not
 import ants
 import utils
 from utils import LOG,LOGN
+from geometry import x,y
 import hull
 import uberplot
 import shortpath
@@ -153,11 +154,11 @@ else:
     points = utils.vertices_of(penrose_segments)
     triangles = triangulation.delaunay_bowyer_watson( points, do_plot = False )
 
-    LOGN( "\tCompute the convex hull of",len(points),"points" )
-    # Should convert the set into a list
-    hull = hull.convex_hull( list(points) )
-    hull_edges = list(utils.tour(hull))
-    LOGN( "\t\tHull of",len(hull_edges),"edges" )
+    # LOGN( "\tCompute the convex hull of",len(points),"points" )
+    # # Should convert the set into a list
+    # hull = hull.convex_hull( list(points) )
+    # hull_edges = list(utils.tour(hull))
+    # LOGN( "\t\tHull of",len(hull_edges),"edges" )
 
     LOGN( "\tRemove triangles that are not sub-parts of the Penrose tiling" )
     # def adjoin_hull(triangle):
