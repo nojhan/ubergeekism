@@ -3,8 +3,8 @@ import sys
 import math
 from itertools import ifilterfalse as filter_if_not
 
-from utils import tour,LOG,LOGN,x,y
-from geometry import mid, middle
+from utils import tour,LOG,LOGN
+from geometry import mid,middle,x,y
 
 # Based on http://paulbourke.net/papers/triangulate/
 # Efficient Triangulation Algorithm Suitable for Terrain Modelling
@@ -130,15 +130,6 @@ def bounds( vertices ):
         ymin = min(y(v),ymin)
         ymax = max(y(v),ymax)
     return (xmin,ymin),(xmax,ymax)
-
-
-def edges_of( triangulation ):
-    """Return a list containing the edges of the given list of 3-tuples of points"""
-    edges = []
-    for t in triangulation:
-        for e in tour(list(t)):
-            edges.append( e )
-    return edges
 
 
 def supertriangle( vertices, delta = 0.1 ):
@@ -343,6 +334,37 @@ def delaunay_bowyer_watson( points, supertri = None, superdelta = 0.1, epsilon =
             plot.clf()
 
     return triangulation
+
+
+def edges_of( triangulation ):
+    """Return a list containing the edges of the given list of 3-tuples of points"""
+    edges = []
+    for t in triangulation:
+        for e in tour(list(t)):
+            edges.append( e )
+    return edges
+
+
+def load( stream ):
+    triangles = []
+    for line in stream:
+        if line.strip()[0] != "#":
+            tri = line.split()
+            assert(len(tri)==3)
+            triangle = []
+            for p in tri:
+                assert(len(p)==2)
+                point = [ (float(y),float(y)) for i,j in p.split(",")]
+                triangle.append( point )
+            triangles.append( triangle )
+    return triangles
+
+
+def write( triangles, stream ):
+    for tri in triangles:
+        assert(len(tri)==3)
+        p,q,r = tri
+        stream.write("%f,%f %f,%f %f,%f\n" % ( x(p),y(p), x(q),y(q), x(r),y(r) ) )
 
 
 if __name__ == "__main__":

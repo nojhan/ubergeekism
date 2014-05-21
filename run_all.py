@@ -17,6 +17,7 @@ import shortpath
 import lindenmayer
 import triangulation
 import voronoi
+import graph
 
 parser = argparse.ArgumentParser()
 
@@ -53,7 +54,8 @@ penrose_segments = set()
 
 if args.penrose:
     LOGN( "Load the penrose tiling" )
-    penrose_segments = utils.load_segments(args.penrose)
+    with open(args.penrose) as fd:
+        penrose_segments = utils.load_segments(fd)
 
 else:
     LOGN( "Draw the penrose tiling" )
@@ -79,11 +81,11 @@ else:
     penrose.draw( depth )
 
     # save this intermediate step
-    LOGN( "\tsegments",len(penrose.segments) )
-    with open("d%i_penrose.segments" % depth, "w") as fd:
-        fd.write( str(penrose) )
-
     penrose_segments = penrose.segments
+    LOGN( "\tsegments",len(penrose_segments) )
+    with open("d%i_penrose.segments" % depth, "w") as fd:
+        utils.write_segments( penrose_segments, fd )
+
 
 
 ########################################################################
@@ -94,7 +96,8 @@ trajs = []
 
 if args.tour != [None]:
     for tour in args.tour:
-        trajs.append( utils.load_points(tour) )
+        with open(tour) as fd:
+            trajs.append( utils.load_points(fd) )
 
 if args.notsp:
     if args.tour == [None] or not args.pheromones:
@@ -102,13 +105,14 @@ if args.notsp:
         sys.exit(error_codes["NO-TSP"])
 
     if args.pheromones:
-        phero = utils.load_matrix(args.pheromones)
+        with open(args.pheromones) as fd:
+            phero = utils.load_matrix(fd)
 
 else:
     LOGN( "Solve the TSP with an Ant Colony Algorithm" )
 
     LOGN( "\tConvert the segment list into an adjacency list graph" )
-    G = utils.adjacency_from_set( penrose_segments )
+    G = graph.graph_of( penrose_segments )
 
     LOGN( "\tCompute a tour" )
     max_it = 10
@@ -130,89 +134,68 @@ else:
     trajs.append(traj)
 
     with open("d%i_tour.points" % depth, "w") as fd:
-        for p in traj:
-            fd.write("%f %f\n" % p)
+        utils.write_points( traj, fd )
+
     with open("d%i_pheromones.mat" % depth, "w") as fd:
-        for row in phero:
-            key = "%f,%f:" % row
-            line = key
-            for k in phero[row]:
-                val = phero[row][k]
-                line += "%f,%f=%f " % (k[0],k[1],val)
-            fd.write( line + "\n" )
+        utils.write_matrix( phero, fd )
 
 
 ########################################################################
 # TRIANGULATION
 ########################################################################
 
+triangulated = []
+
 if args.triangulation:
-    triangulation_edges = utils.load_segments(args.triangulation)
+    with open(args.triangulation) as fd:
+        triangulated = triangulation.load(args.triangulation)
 
 else:
     LOGN( "Compute the triangulation of the penrose vertices" )
     points = utils.vertices_of(penrose_segments)
     triangles = triangulation.delaunay_bowyer_watson( points, do_plot = False )
 
-    # LOGN( "\tCompute the convex hull of",len(points),"points" )
-    # # Should convert the set into a list
-    # hull = hull.convex_hull( list(points) )
-    # hull_edges = list(utils.tour(hull))
-    # LOGN( "\t\tHull of",len(hull_edges),"edges" )
-
     LOGN( "\tRemove triangles that are not sub-parts of the Penrose tiling" )
-    # def adjoin_hull(triangle):
-    #     """Return True if the given triangle has at least one edge that is in the set hull_edges."""
-    #     for (p,q) in utils.tour(list(triangle)):
-    #         if (p,q) in hull_edges or (q,p) in hull_edges:
-    #             return True
-    #     return False
 
     def acute_triangle(triangle):
         """Return True if the center of the circumcircle of the given triangle lies inside the triangle.
            That is if the triangle is acute."""
         return triangulation.in_triangle( triangulation.circumcircle(triangle)[0], triangle )
 
-    # FIXME at depth 3, some triangles have an edge in the convex hull...
-    # Filter out edges that are in hull_edges
-    # tri_nohull = list(filter_if_not( adjoin_hull, triangles ))
     # Filter out triangles that are obtuse
-    # triangulated = list(filter_if_not( acute_triangle, tri_nohull ))
-
     triangulated = list(filter_if_not( acute_triangle, triangles ))
     LOGN( "\t\tRemoved", len(triangles)-len(triangulated), "triangles" )
 
-    triangulation_edges = triangulation.edges_of( triangulated )
-    with open("d%i_triangulation.segments" % depth, "w") as fd:
-        for p0,p1 in triangulation_edges:
-            fd.write("%f %f %f %f\n" % (p0[0],p0[1],p1[0],p1[1]) )
+    with open("d%i_triangulation.triangles" % depth, "w") as fd:
+        triangulation.write( triangulated, fd )
+
+triangulation_edges = triangulation.edges_of( triangulated )
 
 
 ########################################################################
 # VORONOÏ
 ########################################################################
 
+voronoi_graph = {}
+
 if args.voronoi:
-    voronoi_graph = utils.load_adjacency(args.voronoi)
+    with open(args.voronoi) as fd:
+        voronoi_graph = graph.load( fd )
 
 else:
     # LOGN( "Compute the nodes of the Voronoï diagram" )
     voronoi_tri_graph = voronoi.dual(triangulated)
-    voronoi_tri_edges = voronoi.edges_of( voronoi.dual(triangulated) )
+    voronoi_tri_edges = graph.edges_of( voronoi.dual(triangulated) )
     voronoi_tri_centers = voronoi_tri_graph.keys()
 
     voronoi_graph = voronoi.merge_enclosed( voronoi_tri_graph, penrose_segments )
 
     with open("d%i_voronoi.graph" % depth, "w") as fd:
-        for k in voronoi_graph:
-            fd.write( "%f,%f:" % (x(k),y(k)) )
-            for p in voronoi_graph[k]:
-                fd.write( "%f,%f " % (x(p),y(p)) )
-            fd.write("\n")
+        graph.write( voronoi_graph, fd )
 
 
-voronoi_edges = voronoi.edges_of( voronoi_graph )
-voronoi_centers = voronoi_graph.keys()
+voronoi_edges   = graph.edges_of( voronoi_graph )
+voronoi_centers = graph.nodes_of( voronoi_graph )
 
 
 ########################################################################

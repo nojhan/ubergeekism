@@ -4,6 +4,7 @@
 from utils import tour,LOG,LOGN,x,y
 import triangulation
 import geometry
+import graph
 
 def nodes( triangles ):
     """Compute the locations of the centers of all the circumscribed circles of the given triangles"""
@@ -66,17 +67,6 @@ def dual( triangles ):
             add_edge( neighbor_node,  current_node )
 
     return graph
-
-
-def edges_of( graph ):
-    # edges = set()
-    edges = []
-    for k in graph:
-        for n in graph[k]:
-            if k != n and (k,n) not in edges and (n,k) not in edges:
-                # edges.add( (k,n) )
-                edges.append( (k,n) )
-    return edges
 
 
 def merge_nodes( graph, n0, n1, n2 ):
@@ -179,7 +169,7 @@ if __name__ == "__main__":
     delaunay_edges = triangulation.edges_of( triangles )
 
     voronoi_graph = dual( triangles )
-    voronoi_edges = edges_of( voronoi_graph )
+    voronoi_edges = graph.edges_of( voronoi_graph )
     print voronoi_edges
 
     ax = fig.add_subplot(111)

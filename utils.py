@@ -17,80 +17,68 @@ def LOGN( *args ):
     LOG("\n")
 
 
-def load_points( filename ):
+def load_points( stream ):
     points = []
-    with open(filename) as fd:
-        for line in fd:
-            if line.strip()[0] != "#":
-                p = tuple([float(i) for i in line.split()])
-                assert(len(p)==2)
-                points.append( p )
+    for line in stream:
+        if line.strip()[0] != "#":
+            p = tuple([float(i) for i in line.split()])
+            assert(len(p)==2)
+            points.append( p )
     return points
 
 
-def load_segments( filename ):
+def write_points( points, stream ):
+    for p in points:
+        stream.write( "%f,%f\n" % ( x(p),y(p) ) )
+
+
+def load_segments( stream ):
     segments = []
-    with open(filename) as fd:
-        for line in fd:
-            if line.strip()[0] != "#":
-                edge = [float(i) for i in line.split()]
-                assert(len(edge)==4)
-                segments.append( ((edge[0],edge[1]),(edge[2],edge[3])) )
+    for line in stream:
+        if line.strip()[0] != "#":
+            seg = line.strip()
+            assert(len(seg)==2)
+            edge = []
+            for p in seg:
+                assert(len(p)==2)
+                point = tuple([float(i) for i in seg])
+                edge.append( point )
+            segments.append( edge )
     return segments
 
 
-def load_triangles( filename ):
-    triangles = []
-    with open(filename) as fd:
-        for line in fd:
-            if line.strip()[0] != "#":
-                tri = [float(i) for i in line.split()]
-                assert(len(tri)==6)
-                triangles.append( ((tri[0],tri[1]),(tri[2],tri[3]),(tri[4],tri[5])) )
-    return triangles
+def write_segments( segments, stream ):
+    for seg in segments:
+        for p in seg:
+            stream.write( "%f,%f " % ( x(p),y(p) ) )
+        stream.write( "\n" )
 
 
-def load_matrix( filename ):
+def load_matrix( stream ):
     matrix = {}
-    with open(filename) as fd:
-        for line in fd:
-            if line.strip()[0] != "#":
-                skey,svals = line.split(":")
-                key = tuple((float(i) for i in skey.split(',')))
-                col = {}
-                for stri in svals.split():
-                    sk,sv = stri.split("=")
-                    value = float(sv)
-                    k = tuple((float(i) for i in sk.split(",")))
-                    col[k] = value
-                matrix[key] = col
-        assert(len(matrix) == len(matrix[key]))
+    for line in stream:
+        if line.strip()[0] != "#":
+            skey,svals = line.split(":")
+            key = tuple((float(i) for i in skey.split(',')))
+            col = {}
+            for stri in svals.split():
+                sk,sv = stri.split("=")
+                value = float(sv)
+                k = tuple((float(i) for i in sk.split(",")))
+                col[k] = value
+            matrix[key] = col
+    assert(len(matrix) == len(matrix[key]))
     return matrix
 
 
-def load_adjacency( filename ):
-    graph = {}
-    with open(filename) as fd:
-        for line in fd:
-            if line.strip()[0] != "#":
-                skey,svals = line.split(":")
-                key = tuple((float(i) for i in skey.split(',')))
-                graph[key] = []
-                for sp in svals.split():
-                    p = tuple(float(i) for i in sp.split(","))
-                    assert(len(p)==2)
-                    graph[key].append( p )
-    return graph
-
-
-def adjacency_from_set( segments ):
-    graph = {}
-    for start,end in segments:
-        graph[start] = graph.get( start, [] )
-        graph[start].append( end )
-        graph[end]   = graph.get( end,   [] )
-        graph[end].append( start )
-    return graph
+def write_matrix( mat, stream):
+    for row in mat:
+        key = "%f,%f:" % row
+        line = key
+        for k in mat[row]:
+            val = mat[row][k]
+            line += "%f,%f=%f " % (k[0],k[1],val)
+        stream.write( line + "\n" )
 
 
 def vertices_of( segments ):
