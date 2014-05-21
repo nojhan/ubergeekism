@@ -111,10 +111,8 @@ def merge_nodes( graph, n0, n1, n2 ):
 def merge_enclosed( graph, segments ):
     """Merge nodes of the given graph that are on edges that do not intersects with the given segments."""
     i=0
-    LOG("Merge",len(graph),"nodes")
     while i < len(graph.keys()):
         node = graph.keys()[i]
-
         j=0
         altered = False
         while j < len(graph[node]):
@@ -135,8 +133,6 @@ def merge_enclosed( graph, segments ):
             i = 0
         else:
             i+=1
-
-    LOGN("as",len(graph),"enclosed nodes")
 
     return graph
 

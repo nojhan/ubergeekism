@@ -183,12 +183,15 @@ if args.voronoi:
         voronoi_graph = graph.load( fd )
 
 else:
-    # LOGN( "Compute the nodes of the Voronoï diagram" )
+    LOGN( "Compute the Voronoï diagram of the triangulation" )
     voronoi_tri_graph = voronoi.dual(triangulated)
-    voronoi_tri_edges = graph.edges_of( voronoi.dual(triangulated) )
-    voronoi_tri_centers = voronoi_tri_graph.keys()
+    # voronoi_tri_edges   = graph.edges_of(voronoi_tri_graph)
+    # voronoi_tri_centers = graph.nodes_of(voronoi_tri_graph)
 
+    LOGN("\tMerge nodes that are both located within a single diamond" )
+    LOG("\t\tMerge",len(voronoi_graph),"nodes")
     voronoi_graph = voronoi.merge_enclosed( voronoi_tri_graph, penrose_segments )
+    LOGN("as",len(voronoi_graph),"enclosed nodes")
 
     with open("d%i_voronoi.graph" % depth, "w") as fd:
         graph.write( voronoi_graph, fd )
@@ -206,7 +209,7 @@ LOGN( "Plot the resulting tour" )
 fig = plot.figure()
 ax = fig.add_subplot(111)
 
-LOGN( "\tpheromones",len(phero) )#,"x",len(phero[traj[0]]) )
+LOGN( "\tpheromones",len(phero),"nodes" )#,"x",len(phero[traj[0]]) )
 maxph=0
 for i in phero:
     maxph = max( maxph, max(phero[i].values()))
@@ -224,19 +227,21 @@ for i in phero:
         # uberplot.scatter_segments( ax, seg, color="red", alpha=0.5, linewidth=nph )
 
 for traj in trajs:
-    LOGN( "\ttraj",len(traj) )
+    LOGN( "\ttraj",len(traj),"points" )
     # best tour
     uberplot.plot_segments( ax, utils.tour(traj), edgecolor="red",  alpha=0.9, linewidth=3 )
 
-LOGN( "\ttiling",len(penrose_segments) )
+LOGN( "\ttiling",len(penrose_segments),"segments" )
 tcol = "black"
 uberplot.plot_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, linewidth=2 )
 uberplot.scatter_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, linewidth=1 )
 
 # triangulation
+LOGN( "\ttriangulation",len(triangulation_edges),"edges" )
 uberplot.plot_segments( ax, triangulation_edges, edgecolor="green", alpha=0.2, linewidth=1 )
 
 # Voronoï
+LOGN( "\tVoronoï",len(voronoi_edges),"edges")
 uberplot.scatter_points( ax, voronoi_centers, edgecolor="magenta", facecolor="white", s=200, alpha=1 )
 uberplot.plot_segments( ax, voronoi_edges, edgecolor="magenta", alpha=1, linewidth=1 )
 
