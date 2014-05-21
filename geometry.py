@@ -20,7 +20,7 @@ def middle( pa, pb ):
 
 
 def euclidian_distance( ci, cj, graph = None):
-    return math.sqrt( float(ci[0] - cj[0])**2 + float(ci[1] - cj[1])**2 )
+    return math.sqrt( float( x(ci) - x(cj) )**2 + float( y(ci) - y(cj) )**2 )
 
 
 def linear_equation( p0, p1 ):
