@@ -68,6 +68,21 @@ def load_matrix( filename ):
     return matrix
 
 
+def load_adjacency( filename ):
+    graph = {}
+    with open(filename) as fd:
+        for line in fd:
+            if line.strip()[0] != "#":
+                skey,svals = line.split(":")
+                key = tuple((float(i) for i in skey.split(',')))
+                graph[key] = []
+                for sp in svals.split():
+                    p = tuple(float(i) for i in sp.split(","))
+                    assert(len(p)==2)
+                    graph[key].append( p )
+    return graph
+
+
 def adjacency_from_set( segments ):
     graph = {}
     for start,end in segments:

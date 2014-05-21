@@ -193,8 +193,7 @@ else:
 ########################################################################
 
 if args.voronoi:
-    # voronoi_centers = utils.load_points(args.voronoi)
-    pass
+    voronoi_graph = utils.load_adjacency(args.voronoi)
 
 else:
     # LOGN( "Compute the nodes of the Voronoï diagram" )
@@ -203,13 +202,17 @@ else:
     voronoi_tri_centers = voronoi_tri_graph.keys()
 
     voronoi_graph = voronoi.merge_enclosed( voronoi_tri_graph, penrose_segments )
-    voronoi_edges = voronoi.edges_of( voronoi_graph )
-    voronoi_centers = voronoi_graph.keys()
+
+    with open("d%i_voronoi.graph" % depth, "w") as fd:
+        for k in voronoi_graph:
+            fd.write( "%f,%f:" % (x(k),y(k)) )
+            for p in voronoi_graph[k]:
+                fd.write( "%f,%f " % (x(p),y(p)) )
+            fd.write("\n")
 
 
-    # with open("d%i_voronoi_centers.points" % depth, "w") as fd:
-    #     for p in voronoi_centers:
-    #         fd.write( "%f %f\n" % (p[0],p[1]) )
+voronoi_edges = voronoi.edges_of( voronoi_graph )
+voronoi_centers = voronoi_graph.keys()
 
 
 ########################################################################
