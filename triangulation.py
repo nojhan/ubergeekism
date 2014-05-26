@@ -104,15 +104,23 @@ def in_triangle( p0, triangle, exclude_edges = False ):
     beta  = ( (y(p3) - y(p1)) * (x(p0) - x(p3)) + (x(p1) - x(p3)) * (y(p0) - y(p3)) )   \
           / ( (y(p2) - y(p3)) * (x(p1) - x(p3)) + (x(p3) - x(p2)) * (y(p1) - y(p3)) )
     gamma = 1.0 - alpha - beta
+    # print alpha,beta,gamma
 
     if exclude_edges:
         # If all of alpha, beta, and gamma are strictly greater than 0 and lower than 1,
         # (and thus if any of them are lower or equal than 0 or greater than 1)
         # then the point p0 strictly lies within the triangle.
-        return any( x <= 0 or 1 <= x for x in (alpha, beta, gamma ) )
+        return any( x <= 0 or 1 <= x for x in (alpha, beta, gamma) )
     else:
         # If the inequality is strict, then the point may lies on an edge.
-        return any( x <  0 or 1 <  x for x in (alpha, beta, gamma ) )
+        return any( x <  0 or 1 <  x for x in (alpha, beta, gamma) )
+
+
+def is_acute(triangle):
+    """Return True if the center of the circumcircle of the given triangle lies inside the triangle.
+       That is if the triangle is acute."""
+    return in_triangle( circumcircle(triangle)[0], triangle )
+
 
 
 def bounds( vertices ):
@@ -349,12 +357,12 @@ def load( stream ):
     triangles = []
     for line in stream:
         if line.strip()[0] != "#":
-            tri = line.split()
+            tri = line.strip().split()
             assert(len(tri)==3)
             triangle = []
             for p in tri:
-                assert(len(p)==2)
-                point = [ (float(y),float(y)) for i,j in p.split(",")]
+                point = tuple(float(i) for i in p.split(","))
+                assert(len(point)==2)
                 triangle.append( point )
             triangles.append( triangle )
     return triangles

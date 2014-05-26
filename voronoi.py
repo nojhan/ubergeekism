@@ -56,6 +56,9 @@ def dual( triangles ):
 
     for triangle in triangles:
         assert( len(triangle) == 3 )
+        # if not triangulation.is_acute(triangle):
+        #     print triangle
+        assert( triangulation.is_acute(triangle) )
         current_node = triangulation.circumcircle(triangle)[0]
         assert( len(current_node) == 2 )
 

@@ -148,7 +148,7 @@ triangulated = []
 
 if args.triangulation:
     with open(args.triangulation) as fd:
-        triangulated = triangulation.load(args.triangulation)
+        triangulated = triangulation.load(fd)
 
 else:
     LOGN( "Compute the triangulation of the penrose vertices" )
@@ -157,13 +157,8 @@ else:
 
     LOGN( "\tRemove triangles that are not sub-parts of the Penrose tiling" )
 
-    def acute_triangle(triangle):
-        """Return True if the center of the circumcircle of the given triangle lies inside the triangle.
-           That is if the triangle is acute."""
-        return triangulation.in_triangle( triangulation.circumcircle(triangle)[0], triangle )
-
     # Filter out triangles that are obtuse
-    triangulated = list(filter_if_not( acute_triangle, triangles ))
+    triangulated = list(filter_if_not( triangulation.is_acute, triangles ))
     LOGN( "\t\tRemoved", len(triangles)-len(triangulated), "triangles" )
 
     with open("d%i_triangulation.triangles" % depth, "w") as fd:

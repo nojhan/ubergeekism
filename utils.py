@@ -21,7 +21,7 @@ def load_points( stream ):
     points = []
     for line in stream:
         if line.strip()[0] != "#":
-            p = tuple([float(i) for i in line.split()])
+            p = tuple([float(i) for i in line.split(",")])
             assert(len(p)==2)
             points.append( p )
     return points
@@ -36,12 +36,12 @@ def load_segments( stream ):
     segments = []
     for line in stream:
         if line.strip()[0] != "#":
-            seg = line.strip()
+            seg = line.strip().split()
             assert(len(seg)==2)
             edge = []
             for p in seg:
-                assert(len(p)==2)
-                point = tuple([float(i) for i in seg])
+                point = tuple([float(i) for i in p.split(",")])
+                assert(len(point)==2)
                 edge.append( point )
             segments.append( edge )
     return segments
