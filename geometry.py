@@ -4,6 +4,7 @@ from __future__ import division
 import math
 
 epsilon = 1e-6
+# epsilon = 0
 
 def x( point ):
     return point[0]
@@ -49,14 +50,16 @@ def is_point( segment ):
     return segment[0] == segment[1]
 
 
-def collinear( p, q, r ):
+def collinear( p, q, r, e = epsilon ):
     """Returns True if the 3 given points are collinear.
 
     Note: there is a lot of algorithm to test collinearity, the most known involving linear algebra.
     This one has been found in Jonathan Shewchuk's "Lecture Notes on Geometric Robustness".
     It is maybe the most elegant one: just arithmetic on x and y, without ifs, sqrt or risk of divide-by-zero error.
     """
-    return (x(p)-x(r)) * (y(q)-y(r)) == (x(q)-x(r)) * (y(p)-y(r))
+    # Without epsilon comparison, this would ends as:
+    # return (x(p)-x(r)) * (y(q)-y(r)) == (x(q)-x(r)) * (y(p)-y(r))
+    return abs((x(p)-x(r)) * (y(q)-y(r)) - (x(q)-x(r)) * (y(p)-y(r))) <= e
 
 
 def line_intersection( seg0, seg1 ):
@@ -162,6 +165,7 @@ if __name__ == "__main__":
     import uberplot
     import matplotlib.pyplot as plot
 
+    # intersections demo
     if len(sys.argv) > 1:
         scale = 100
         nb = int(sys.argv[1])
@@ -198,11 +202,48 @@ if __name__ == "__main__":
 
     fig = plot.figure()
 
-    ax = fig.add_subplot(111)
-    ax.set_aspect('equal')
+    ax = fig.add_subplot(121)
     uberplot.plot_segments( ax, segments, linewidth=0.5, edgecolor = "blue" )
     uberplot.scatter_points( ax, points,     edgecolor="blue", facecolor="blue",  s=120, alpha=1, linewidth=1 )
     uberplot.scatter_points( ax, line_inter, edgecolor="none", facecolor="green", s=60,  alpha=0.5 )
     uberplot.scatter_points( ax, seg_inter,  edgecolor="none", facecolor="red",   s=60,  alpha=0.5 )
+    ax.set_aspect('equal')
+
+
+    # collinear test demo
+    if len(sys.argv) > 1:
+        scale = 100
+        nb = int(sys.argv[1])
+        triangles = []
+        for t in range(nb):
+            triangles.append( [ [scale*random.random(),scale*random.random()] for i in range(3)] )
+            # forced collinear
+            t = [ [scale*random.random(),scale*random.random()] for i in range(2)]
+            triangles.append( [t[0],t[1],t[0]] )
+
+    else:
+        triangles = [
+                [(-60.45085, -24.898983), (-68.54102, -30.776835), (-58.54102, -30.776835)],
+                [(-68.54102, -0.0), (-65.45085, -9.510565), (-58.54102, -0.0)],
+                [(-65.45085, 9.510565), (-68.54102, -0.0), (-58.54102, -0.0)],
+                [(-68.54102, 30.776835), (-60.45085, 24.898983), (-58.54102, 30.776835)],
+                [(-58.54102, -0.0), (-65.45085, -9.510565), (-55.45085, -9.510565)],
+                [(-65.45085, -9.510565), (-57.36068, -15.388418), (-55.45085, -9.510565)],
+                [(-65.45085, 9.510565), (-58.54102, -0.0), (-55.45085, 9.510565)],
+                [(-65.45085, 9.510565), (-65.45085, 9.510565), (-55.45085, 9.510565)], # is collinear
+            ]
+
+    ax = fig.add_subplot(122)
+
+    for triangle in triangles:
+        status="green"
+        if collinear(*triangle):
+            status="red"
+        uberplot.plot_segments( ax, utils.tour(triangle), edgecolor = status )
+
+    # ax.set_aspect('equal')
+    ax.axis('auto')
+
+
     plot.show()
 
