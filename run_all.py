@@ -15,6 +15,7 @@ import hull
 import uberplot
 import shortpath
 import lindenmayer
+import geometry
 import triangulation
 import voronoi
 import graph
@@ -157,9 +158,16 @@ else:
 
     LOGN( "\tRemove triangles that are not sub-parts of the Penrose tiling" )
 
-    # Filter out triangles that are obtuse
-    triangulated = list(filter_if_not( triangulation.is_acute, triangles ))
-    LOGN( "\t\tRemoved", len(triangles)-len(triangulated), "triangles" )
+
+    def strictly_acute(triangle):
+        return triangulation.is_acute( triangle, exclude_edges = True )
+    # Filter (i.e. keep) triangles that are strictly acute,
+    # By excluding edges, we also ensure that no triangle can be collinear nor rectangle,
+    triangulated = list(filter( strictly_acute, triangles ))
+    # A more consise but less readable one-liner would be:
+    # triangulated = list(filter( lambda t: triangulation.is_acute( t, exclude_edges = True ), triangles ))
+
+    LOGN( "\t\tRemoved", len(triangles)-len(triangulated), "triangles from", len(triangles))
 
     with open("d%i_triangulation.triangles" % depth, "w") as fd:
         triangulation.write( triangulated, fd )
@@ -184,7 +192,7 @@ else:
     # voronoi_tri_centers = graph.nodes_of(voronoi_tri_graph)
 
     LOGN("\tMerge nodes that are both located within a single diamond" )
-    LOG("\t\tMerge",len(voronoi_graph),"nodes")
+    LOG("\t\tMerge",len(voronoi_tri_graph),"nodes")
     voronoi_graph = voronoi.merge_enclosed( voronoi_tri_graph, penrose_segments )
     LOGN("as",len(voronoi_graph),"enclosed nodes")
 
@@ -229,7 +237,7 @@ for traj in trajs:
 LOGN( "\ttiling",len(penrose_segments),"segments" )
 tcol = "black"
 uberplot.plot_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, linewidth=2 )
-uberplot.scatter_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, linewidth=1 )
+# uberplot.scatter_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, linewidth=1 )
 
 # triangulation
 LOGN( "\ttriangulation",len(triangulation_edges),"edges" )
@@ -237,8 +245,10 @@ uberplot.plot_segments( ax, triangulation_edges, edgecolor="green", alpha=0.2, l
 
 # Voronoï
 LOGN( "\tVoronoï",len(voronoi_edges),"edges")
-uberplot.scatter_points( ax, voronoi_centers, edgecolor="magenta", facecolor="white", s=200, alpha=1 )
+# uberplot.plot_segments( ax, voronoi_tri_edges, edgecolor="red", alpha=1, linewidth=1 )
+# uberplot.scatter_points( ax, voronoi_tri_centers, edgecolor="red", facecolor="white", s=200, alpha=1, zorder=10 )
 uberplot.plot_segments( ax, voronoi_edges, edgecolor="magenta", alpha=1, linewidth=1 )
+uberplot.scatter_points( ax, voronoi_centers, edgecolor="magenta", facecolor="white", s=200, alpha=1, zorder=11 )
 
 ax.set_aspect('equal')
 
