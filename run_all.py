@@ -208,6 +208,34 @@ voronoi_centers = graph.nodes_of( voronoi_graph )
 # PLOT
 ########################################################################
 
+contrast = [
+        ("pheromones",{"edgecolor":"blue"}), # do not specify linewidth and alpha
+        ("tour",{"edgecolor":"red","alpha":0.9, "linewidth":3}),
+        ("penrose",{"edgecolor":"black", "alpha":0.9, "linewidth":0.9}),
+        ("triangulation",{"edgecolor":"green","alpha":0.2,"linewidth":1}),
+        ("voronoi_edges",{"edgecolor":"magenta","alpha":1,"linewidth":1}),
+        ("voronoi_nodes",{"edgecolor":"magenta","facecolor":"white","alpha":1,"linewidth":1,"s":200}),
+]
+
+clean = [
+        ("triangulation",{"edgecolor":"lightgreen","alpha":1,"linewidth":0.5}),
+        ("pheromones",{"edgecolor":"#ffcc00"}),
+        ("tour",{"edgecolor":"#7777dd","alpha":0.7, "linewidth":2.5}),
+        ("penrose",{"edgecolor":"black", "alpha":1, "linewidth":0.3}),
+        ("voronoi_edges",{"edgecolor":"blue","alpha":0.4,"linewidth":1}),
+        ("voronoi_nodes",{"edgecolor":"blue","facecolor":"white","alpha":0.4,"linewidth":1.5,"s":250}),
+]
+
+chosen_theme = clean
+
+# Rebuild the theme from the chosen one and add zorder using the order given in the theme.
+theme = {}
+for i in range(len(chosen_theme)):
+    k = chosen_theme[i][0]
+    theme[k] = chosen_theme[i][1]
+    theme[k]["zorder"] = i
+
+
 LOGN( "Plot the resulting tour" )
 fig = plot.figure()
 ax = fig.add_subplot(111)
@@ -226,29 +254,27 @@ for i in phero:
         nph = phero[i][j]/maxph
         seg = [(i,j)]
         # LOGN( nph,seg )
-        uberplot.plot_segments( ax, seg, edgecolor="blue", alpha=0.01*nph, linewidth=1*nph )
+        uberplot.plot_segments( ax, seg, alpha=0.01*nph, linewidth=1*nph, **theme["pheromones"] )
         # uberplot.scatter_segments( ax, seg, color="red", alpha=0.5, linewidth=nph )
 
 for traj in trajs:
     LOGN( "\ttraj",len(traj),"points" )
     # best tour
-    uberplot.plot_segments( ax, utils.tour(traj), edgecolor="red",  alpha=0.9, linewidth=3 )
+    uberplot.plot_segments( ax, utils.tour(traj), **theme["tour"])
 
 LOGN( "\ttiling",len(penrose_segments),"segments" )
-tcol = "black"
-uberplot.plot_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, linewidth=2 )
-# uberplot.scatter_segments( ax, penrose_segments, edgecolor=tcol, alpha=0.9, linewidth=1 )
+uberplot.plot_segments( ax, penrose_segments, **theme["penrose"])
 
 # triangulation
 LOGN( "\ttriangulation",len(triangulation_edges),"edges" )
-uberplot.plot_segments( ax, triangulation_edges, edgecolor="green", alpha=0.2, linewidth=1 )
+uberplot.plot_segments( ax, triangulation_edges, **theme["triangulation"])
 
 # Voronoï
 LOGN( "\tVoronoï",len(voronoi_edges),"edges")
 # uberplot.plot_segments( ax, voronoi_tri_edges, edgecolor="red", alpha=1, linewidth=1 )
 # uberplot.scatter_points( ax, voronoi_tri_centers, edgecolor="red", facecolor="white", s=200, alpha=1, zorder=10 )
-uberplot.plot_segments( ax, voronoi_edges, edgecolor="magenta", alpha=1, linewidth=1 )
-uberplot.scatter_points( ax, voronoi_centers, edgecolor="magenta", facecolor="white", s=200, alpha=1, zorder=11 )
+uberplot.plot_segments(  ax, voronoi_edges,   **theme["voronoi_edges"] )
+uberplot.scatter_points( ax, voronoi_centers, **theme["voronoi_nodes"] )
 
 ax.set_aspect('equal')
 
