@@ -208,6 +208,8 @@ voronoi_centers = graph.nodes_of( voronoi_graph )
 # PLOT
 ########################################################################
 
+dpi = 600
+
 contrast = [
         ("pheromones",{"edgecolor":"blue"}), # do not specify linewidth and alpha
         ("tour",{"edgecolor":"red","alpha":0.9, "linewidth":3}),
@@ -282,11 +284,11 @@ ax.set_aspect('equal')
 # transparent background in SVG
 fig.patch.set_visible(False)
 ax.axis('off')
-plot.savefig("ubergeekism.svg", dpi=600)
+plot.savefig("ubergeekism_d%i.svg" % depth, dpi=dpi)
 
-ax.axis('off')
 fig.patch.set_visible(True)
 fig.patch.set_facecolor('white')
-plot.savefig("ubergeekism.png", dpi=600)
+plot.savefig("ubergeekism_d%i.png" % depth, dpi=dpi)
+
 plot.show()
 
