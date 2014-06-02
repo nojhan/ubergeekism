@@ -21,24 +21,24 @@ def edge_in( edge, edges ):
     return (n,m) in edges or (m,n) in edges
 
 
-def neighbours( triangle, polygons ):
-    """Returns the set of triangles in candidates that have an edge in common with the given triangle."""
+def neighbours( candidate, polygons ):
+    """Returns the set of candidates in candidates that have an edge in common with the given candidate."""
     for polygon in polygons:
-        if polygon == triangle:
+        if polygon == candidate:
             continue
 
         # Convert list of points to list of edges, because we want to find EDGE neighbours.
-        edges_poly = list(tour(list(polygon )))
+        edges_poly = list(tour(list(polygon)))
         assert( len(list(edges_poly)) > 0 )
-        edges_tri  = list(tour(list(triangle)))
-        assert( len(list(edges_tri)) > 0 )
+        edges_can  = list(tour(list(candidate)))
+        assert( len(list(edges_can)) > 0 )
 
-        # If at least one of the edge that are in availables polygons are also in the given triangle.
+        # If at least one of the edge that are in availables polygons are also in the given candidate.
         # Beware the symetric edges.
-        # if any( edge_in( edge, edges_tri ) for edge in edges_poly ):
-        #     yield polygon
         for edge in edges_poly:
-            if edge_in( edge, edges_tri ):
+            # We use yield within the loop, because we want to test all the candidate edges and
+            # return all the matching ones.
+            if edge_in( edge, edges_can ):
                 yield polygon
                 break
 
@@ -56,16 +56,21 @@ def dual( triangles ):
 
     for triangle in triangles:
         assert( len(triangle) == 3 )
-        # if not triangulation.is_acute(triangle):
-        #     print triangle
+        assert( not geometry.collinear(*triangle) )
         assert( triangulation.is_acute(triangle) )
+        # Consider the center of the circumcircle as the node for this triangle.
         current_node = triangulation.circumcircle(triangle)[0]
         assert( len(current_node) == 2 )
 
         for neighbor_triangle in neighbours( triangle, triangles ):
+            assert( len(triangle) == 3 )
+            assert( not geometry.collinear(*neighbor_triangle) )
+            assert( triangulation.is_acute(neighbor_triangle) )
+            # Consider the neighbor's center as nodes.
             neighbor_node = triangulation.circumcircle(neighbor_triangle)[0]
             assert( len(neighbor_node) == 2 )
 
+            # Add edges between the current triangle's node and thoses of its neighbors.
             add_edge(  current_node, neighbor_node )
             add_edge( neighbor_node,  current_node )
 
