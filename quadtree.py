@@ -1,31 +1,23 @@
-
-# import enum
+#!/usr/bin/env python
 
 import geometry
 from geometry import x,y
 
-def next_id( existing_ids ):
-    i = 0
-    while i in existing_ids:
-        i += 1
-    return i
-
+# import enum
 
 class QuadTree(object):
 
     def __init__( self, points = [] ):
-
-        # Data structures to handle the quadtree
-
-        # 0 is the root quadrant
-        self.quadrants = { 0: None }
-        self.widths = { 0: None }
-        self.occupants = { 0: None }
-        # Quadrants may have four children
-        self.children = { 0: [] }
+        """Build a quadtree on the given set of points."""
 
         # Initialize the root quadrant as the box around the points
-        self.init(points = points)
+        self.init( points = points )
+
+        # Data structures to handle the quadtree
+        self.residents = { self.root: None }
+
+        # Quadrants may have four children
+        self.children = { self.root: [] }
 
         # Status of quadrants
         # class Status(enum.Enum):
@@ -42,121 +34,135 @@ class QuadTree(object):
 
 
     def init( self, quadrant = None, box = None, points = None ):
+        """Initialize the root quadrant with the given quadrant ((x,y),width), the given box or the given set of points."""
+
         if len([k for k in (box,points,quadrant) if k]) > 1:
             raise BaseException("ERROR: you should specify only one of the options")
 
-        # Initialize the root quadrant as the box around the points
+        # Initialize the root quadrant as the given box
         if box:
             minp,maxp = box
-            w = max( x(maxp)-x(minp), y(maxp)-y(minp) )
-            self.widths[0] = w
-            self.quadrants[0] = minp
+            width = max( x(maxp)-x(minp), y(maxp)-y(minp) )
+
+        # Initialize the root quadrant as the box around the points
         elif points:
             minp,maxp = geometry.box( points )
-            w = max( x(maxp)-x(minp), y(maxp)-y(minp) )
-            self.widths[0] = w
-            self.quadrants[0] = minp
+            width = max( x(maxp)-x(minp), y(maxp)-y(minp) )
+
+        # Initialize the root quadrant as the given origin point and width
         elif quadrant:
-            self.quadrants[0] = quadrant[0]
-            self.widths[0] = quadrant[1]
+            minp = quadrant[0]
+            width = quadrant[1]
+
         else:
             raise BaseException("ERROR: you should specify a box, a quadrant or points")
 
+        # There is always the root quadrant in the list of available ones.
+        self.root = (minp,width)
+        self.quadrants = [ self.root ]
 
-    def appendable( self, p, quad ):
+
+    def as_box( self, quadrant );
+        width = quadrant[1]
+        maxp = tuple(xy+width for xy in quadrant[0])
+        return (quadrant[0],maxp)
+
+
+    def status( self, point, quadrant ):
         """Return Status.Empty if the given point can be appended in the given quadrant."""
-        assert(p is not None)
-        assert(len(p) == 2)
-        minp = self.quadrants[quad]
-        assert(minp is not None)
-        assert(len(minp) == 2)
-        w = self.widths[quad]
-        maxp = tuple(i+w for i in minp)
-        box = (minp,maxp)
+
+        assert(point is not None)
+        assert(len(point) == 2)
+        assert(quadrant is not None)
+        assert(len(quadrant) == 2)
+
+        box = self.as_box( quadrant )
 
         # if the point lies inside the given quadrant
-        if geometry.in_box( p, box):
-            if self.occupants[quad]:
+        if geometry.in_box( point, box):
+            if self.residents[quadrant]:
                 # external: a quadrant that already contains a point
-                assert( not self.children[quad] )
+                assert( not self.children[quadrant] )
                 # print("is external leaf")
                 return self.Status.Leaf
-            elif self.children[quad]:
+            elif self.children[quadrant]:
                 # internal: a quadrant that contains other quadrants
-                # print("is internal node")
                 return self.Status.Node
             else:
                 # empty: there is not point yet in this quadrant
-                # print("is empty")
                 return self.Status.Empty
         else:
             # point is out of the quadrant
-            # print("is out")
             return self.Status.Out
 
 
     def split(self, quadrant ):
         """Split an existing quadrant in four children quadrants.
 
-        Spread existing occupants to the children."""
+        Spread existing residents to the children."""
 
         # We cannot split a quadrant if it already have sub-quadrants
-        if quadrant != 0:
+        if quadrant != self.root:
             assert( not self.children[quadrant] )
 
-        qx, qy = self.quadrants[quadrant]
-        w = self.widths[quadrant] / 2
+        qx, qy = quadrant[0]
+        w = quadrant[1] / 2
 
         # For each four children quadrant's origins
+        self.children[quadrant] = []
         for orig in ((qx,qy), (qx,qy+w), (qx+w,qy+w), (qx+w,qy)):
+            q = (orig,w)
             # Create a child quadrant of half its width
-            id = next_id( self.quadrants )
-            self.widths[id] = w
-            self.quadrants[id] = orig
-            self.occupants[id] = None
+            self.quadrants.append(q)
+            self.residents[q] = None
 
-            # add a new child to the current parent
-            self.children[quadrant].append(id)
-            self.children[id] = []
-
-        # Move the occupant to the related children node
-        p = self.occupants[quadrant]
-        if p is not None:
-            # Find the suitable children quadrant
-            for child in self.children[quadrant]:
-                if self.appendable(p,child) == self.Status.Empty:
-                    self.occupants[child] = p
-                    break
-            # Forget we had occupant here
-            # Do not pop the key, because we have tests on it elsewhere
-            self.occupants[quadrant] = None
+            # Add a new child to the current parent.
+            self.children[quadrant].append(q)
+            # The new quadrant has no child.
+            self.children[q] = []
 
         assert( len(self.children[quadrant]) == 4 )
 
+        # Move the resident to the related children node
+        p = self.residents[quadrant]
+        if p is not None:
+            # Find the suitable children quadrant
+            for child in self.children[quadrant]:
+                if self.status(p,child) == self.Status.Empty:
+                    self.residents[child] = p
+                    break
+            # Forget we had resident here
+            # Do not pop the key, because we have tests on it elsewhere
+            self.residents[quadrant] = None
 
-    def append( self, point, quadrant = 0 ):
+
+
+    def append( self, point, quadrant = None ):
         """Try to inset the given point in the existing quadtree, under the given quadrant.
 
-        The default quadrant is the root one (0).
+        The default quadrant is the root one.
         Returns True if the point was appended, False if it is impossible to append it."""
+
+        # Default to the root quadrant
+        if not quadrant:
+            quadrant = self.root
         assert(quadrant in self.quadrants)
-        # The point should not be out the root quadrant
-        assert( self.appendable(point,0) != self.Status.Out )
+
+        # The point should not be out of the root quadrant
+        assert( self.status(point,self.root) != self.Status.Out )
 
         for q in self.walk(quadrant):
-            status = self.appendable( point, q )
+            status = self.status( point, q )
             if status == self.Status.Leaf:
                 # Create sub-quadrants
                 self.split(q)
                 # Try to attach the point in children quadrants, recursively
                 for child in self.children[q]:
-                    # print("consider children %i" % child)
                     if self.append( point, child ):
                         return True
             elif status == self.Status.Empty:
-                # add the point as an occupant of the quadrant q
-                self.occupants[q] = point
-                # print("%s appended at %i" % (point,q))
+                # add the point as an resident of the quadrant q
+                self.residents[q] = point
                 return True
         return False
 
@@ -165,10 +171,15 @@ class QuadTree(object):
         """append all the given points in the quadtree."""
         for p in points:
             self.append(p)
-        # assert( len(points) == len(self) )
+        assert( len(points) == len(self) )
 
 
-    def iterative_walk(self, at_quad = 0 ):
+    def iterative_walk(self, at_quad = None ):
+
+        # Default to the root quadrant
+        if not at_quad:
+            at_quad = self.root
+
         # First, consider the root quadrant
         yield at_quad
 
@@ -180,32 +191,41 @@ class QuadTree(object):
             quads.extend( self.children[child] )
 
 
-    def recursive_walk(self, at_quad = 0 ):
+    def recursive_walk(self, at_quad = None ):
+
+        # Default to the root quadrant
+        if not at_quad:
+            at_quad = self.root
+
         yield at_quad
         for child in self.children[at_quad]:
             for q in self.recursive_walk(child):
                 yield q
 
 
-    def repr(self,quad=0,depth=0):
+    def repr(self, quad=None, depth=0):
+
+        # Default to the root quadrant
+        if not quad:
+            quad = self.root
+
         head = "  "*depth
         r = head+"{"
-        quadrep = '"origin" : %s, "width" : %f' % (self.quadrants[quad],self.widths[quad])
-        if self.occupants[quad]: # external
-            r += ' "id" : %i, "occupant" : %s, \t%s },\n' % (quad,self.occupants[quad],quadrep)
+        quadrep = '"origin" : %s, "width" : %f' % quad
+        if self.residents[quad]: # external
+            r += ' "resident" : %s, \t%s },\n' % (self.residents[quad],quadrep)
         elif self.children[quad]: # internal
-            r += ' "id" : %i, "children_ids" : %s, \t%s, "children" : [\n' % (quad,self.children[quad],quadrep)
+            r += ' "children_ids" : %s, \t%s, "children" : [\n' % (self.children[quad],quadrep)
             for child in self.children[quad]:
                 r += self.repr(child, depth+1)
             r+="%s]},\n" % head
         else: # empty
-            r += ' "id" : %i, "occupant" : (), \t\t\t%s},\n' % (quad,quadrep)
+            r += ' "resident" : (), \t\t\t%s},\n' % (quadrep)
         return r
 
 
     def points( self ):
-        # return [self.occupants[q] for q in self.occupants if self.occupants[q] is not None]
-        return [p for p in self.occupants.values() if p is not None]
+        return [p for p in self.residents.values() if p is not None]
 
 
     def __iter__(self):
@@ -242,12 +262,12 @@ if __name__ == "__main__":
 
     random.seed(seed)
 
-    n=200
+    n=20
     points = [ ( round(random.uniform(-n,n),2),round(random.uniform(-n,n),2) ) for i in range(n) ]
 
     quad = QuadTree( points )
     print(quad)
-    sys.stderr.write( "%i attached points / %i appended points\n" % (len(quad), len(points)) )
+    sys.stderr.write( "%i points in the quadtree / %i points\n" % (len(quad), len(points)) )
 
 
     fig = plot.figure()
@@ -255,11 +275,12 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111)
     ax.set_aspect('equal')
     uberplot.scatter_points( ax, points, facecolor="red", edgecolor="red")
-    uberplot.scatter_points( ax, quad.points(), facecolor="green", edgecolor="None")
+    # uberplot.scatter_points( ax, quad.points(), facecolor="green", edgecolor="None")
+    uberplot.scatter_points( ax, list(quad), facecolor="green", edgecolor="None")
 
     for q in quad.quadrants:
-        qx, qy = quad.quadrants[q]
-        w = quad.widths[q]
+        qx, qy = q[0]
+        w = q[1]
         box = [(qx,qy), (qx,qy+w), (qx+w,qy+w), (qx+w,qy)]
         edges = list( utils.tour(box) )
         uberplot.plot_segments( ax, edges, edgecolor = "blue", alpha = 0.1, linewidth = 2 )
