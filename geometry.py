@@ -142,8 +142,7 @@ def in_box( point, box, exclude_edges = False ):
 
 
 def segment_intersection( seg0, seg1 ):
-    """Return the coordinates of the intersection point of two segments, or None.
-    If segments are colinear, returns colinear_value."""
+    """Return the coordinates of the intersection point of two segments, or None."""
     assert( len(seg0) == 2 )
     assert( len(seg1) == 2 )
 
