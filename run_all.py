@@ -39,12 +39,29 @@ parser.add_argument('-g', "--triangulation", help="Do not compute the Delaunay t
 parser.add_argument('-v', "--voronoi", help="Do not compute the Voronoï diagram but load it from a file",
         default=None, action='store', type=str, metavar="POINTS")
 
-args = parser.parse_args()
+parser.add_argument('-C', "--cache", help="Try to load available precomputed files instead of computing from scratch",
+        default=False, action='store_true')
+
+parser.add_argument('-P', "--noplot-penrose", help="Do not plot the Penrose tiling",       default=False, action='store_true')
+parser.add_argument('-T', "--noplot-tour", help="Do not plot the TSP tours",               default=False, action='store_true')
+parser.add_argument('-M', "--noplot-pheromones", help="Do not plot the pheromones matrix", default=False, action='store_true')
+parser.add_argument('-G', "--noplot-triangulation", help="Do not plot the triangulation",  default=False, action='store_true')
+parser.add_argument('-V', "--noplot-voronoi", help="Do not plot the Voronoï diagram",     default=False, action='store_true')
+
+ask_for = parser.parse_args()
+
+if ask_for.cache:
+    ask_for.penrose = "d%i_penrose.segments" % ask_for.depth
+    ask_for.triangulation = "d%i_triangulation.triangles" % ask_for.depth
+    ask_for.notsp = True
+    ask_for.tour = ["d%i_tour.points" % ask_for.depth]
+    ask_for.pheromones = "d%i_pheromones.mat" % ask_for.depth
+    ask_for.voronoi = "d%i_voronoi.graph" % ask_for.depth
 
 
 error_codes = {"NOTSP":100}
 
-depth = args.depth
+depth = ask_for.depth
 LOGN( "depth",depth )
 
 ########################################################################
@@ -53,9 +70,9 @@ LOGN( "depth",depth )
 
 penrose_segments = set()
 
-if args.penrose:
+if ask_for.penrose:
     LOGN( "Load the penrose tiling" )
-    with open(args.penrose) as fd:
+    with open(ask_for.penrose) as fd:
         penrose_segments = utils.load_segments(fd)
 
 else:
@@ -95,18 +112,18 @@ else:
 
 trajs = []
 
-if args.tour != [None]:
-    for tour in args.tour:
+if ask_for.tour != [None]:
+    for tour in ask_for.tour:
         with open(tour) as fd:
             trajs.append( utils.load_points(fd) )
 
-if args.notsp:
-    if args.tour == [None] or not args.pheromones:
+if ask_for.notsp:
+    if ask_for.tour == [None] or not ask_for.pheromones:
         LOGN( "If you do not want to solve the TSP, you must provide a solution tour (--tour) and a pheromones matrix (--pheromones)" )
         sys.exit(error_codes["NO-TSP"])
 
-    if args.pheromones:
-        with open(args.pheromones) as fd:
+    if ask_for.pheromones:
+        with open(ask_for.pheromones) as fd:
             phero = utils.load_matrix(fd)
 
 else:
@@ -116,8 +133,10 @@ else:
     G = graph.graph_of( penrose_segments )
 
     LOGN( "\tCompute a tour" )
-    max_it = 10
-    num_ants = 10 #* depth
+    # max_it = 10
+    max_it = 2
+    # num_ants = 10 #* depth
+    num_ants = 2 #* depth
     decay = 0.1
     w_heur = 2.5
     w_local_phero = 0.1
@@ -147,8 +166,8 @@ else:
 
 triangulated = []
 
-if args.triangulation:
-    with open(args.triangulation) as fd:
+if ask_for.triangulation:
+    with open(ask_for.triangulation) as fd:
         triangulated = triangulation.load(fd)
 
 else:
@@ -159,13 +178,18 @@ else:
     LOGN( "\tRemove triangles that are not sub-parts of the Penrose tiling" )
 
 
-    def strictly_acute(triangle):
-        return triangulation.is_acute( triangle, exclude_edges = True )
     # Filter (i.e. keep) triangles that are strictly acute,
-    # By excluding edges, we also ensure that no triangle can be collinear nor rectangle,
-    triangulated = list(filter( strictly_acute, triangles ))
+    def strictly_acute(triangle):
+        # By excluding edges, we also ensure that no triangle can be collinear nor rectangle,
+        return triangulation.is_acute( triangle, exclude_edges = True )
+    triangulated_acute = list(filter( strictly_acute, triangles ))
     # A more consise but less readable one-liner would be:
     # triangulated = list(filter( lambda t: triangulation.is_acute( t, exclude_edges = True ), triangles ))
+
+    # def not_collinear(triangle):
+    #     return not geometry.collinear(*triangle)
+    # triangulated = list(filter( not_collinear, triangulated_acute ))
+    triangulated = triangulated_acute
 
     LOGN( "\t\tRemoved", len(triangles)-len(triangulated), "triangles from", len(triangles))
 
@@ -181,8 +205,8 @@ triangulation_edges = triangulation.edges_of( triangulated )
 
 voronoi_graph = {}
 
-if args.voronoi:
-    with open(args.voronoi) as fd:
+if ask_for.voronoi:
+    with open(ask_for.voronoi) as fd:
         voronoi_graph = graph.load( fd )
 
 else:
@@ -238,45 +262,48 @@ for i in range(len(chosen_theme)):
     theme[k]["zorder"] = i
 
 
-LOGN( "Plot the resulting tour" )
+LOGN( "Plot the image" )
 fig = plot.figure()
 ax = fig.add_subplot(111)
 
-LOGN( "\tpheromones",len(phero),"nodes" )#,"x",len(phero[traj[0]]) )
-maxph=0
-for i in phero:
-    maxph = max( maxph, max(phero[i].values()))
+if not ask_for.noplot_pheromones:
+    LOGN( "\tpheromones",len(phero),"nodes" )#,"x",len(phero[traj[0]]) )
+    maxph=0
+    for i in phero:
+        maxph = max( maxph, max(phero[i].values()))
 
-# ant colony
-# pheromones
-for i in phero:
-    for j in phero[i]:
-        if i == j:
-            continue
-        nph = phero[i][j]/maxph
-        seg = [(i,j)]
-        # LOGN( nph,seg )
-        uberplot.plot_segments( ax, seg, alpha=0.01*nph, linewidth=1*nph, **theme["pheromones"] )
-        # uberplot.scatter_segments( ax, seg, color="red", alpha=0.5, linewidth=nph )
+    # ant colony
+    # pheromones
+    for i in phero:
+        for j in phero[i]:
+            if i == j:
+                continue
+            nph = phero[i][j]/maxph
+            seg = [(i,j)]
+            # LOGN( nph,seg )
+            uberplot.plot_segments( ax, seg, alpha=0.01*nph, linewidth=1*nph, **theme["pheromones"] )
+            # uberplot.scatter_segments( ax, seg, color="red", alpha=0.5, linewidth=nph )
 
-for traj in trajs:
-    LOGN( "\ttraj",len(traj),"points" )
-    # best tour
-    uberplot.plot_segments( ax, utils.tour(traj), **theme["tour"])
+if not ask_for.noplot_tour:
+    for traj in trajs:
+        LOGN( "\ttraj",len(traj),"points" )
+        # best tour
+        uberplot.plot_segments( ax, utils.tour(traj), **theme["tour"])
 
-LOGN( "\ttiling",len(penrose_segments),"segments" )
-uberplot.plot_segments( ax, penrose_segments, **theme["penrose"])
+if not ask_for.noplot_penrose:
+    LOGN( "\ttiling",len(penrose_segments),"segments" )
+    uberplot.plot_segments( ax, penrose_segments, **theme["penrose"])
 
-# triangulation
-LOGN( "\ttriangulation",len(triangulation_edges),"edges" )
-uberplot.plot_segments( ax, triangulation_edges, **theme["triangulation"])
+if not ask_for.noplot_triangulation:
+    LOGN( "\ttriangulation",len(triangulation_edges),"edges" )
+    uberplot.plot_segments( ax, triangulation_edges, **theme["triangulation"])
 
-# Voronoï
-LOGN( "\tVoronoï",len(voronoi_edges),"edges")
-# uberplot.plot_segments( ax, voronoi_tri_edges, edgecolor="red", alpha=1, linewidth=1 )
-# uberplot.scatter_points( ax, voronoi_tri_centers, edgecolor="red", facecolor="white", s=200, alpha=1, zorder=10 )
-uberplot.plot_segments(  ax, voronoi_edges,   **theme["voronoi_edges"] )
-uberplot.scatter_points( ax, voronoi_centers, **theme["voronoi_nodes"] )
+if not ask_for.noplot_voronoi:
+    LOGN( "\tVoronoï",len(voronoi_edges),"edges")
+    # uberplot.plot_segments( ax, voronoi_tri_edges, edgecolor="red", alpha=1, linewidth=1 )
+    # uberplot.scatter_points( ax, voronoi_tri_centers, edgecolor="red", facecolor="white", s=200, alpha=1, zorder=10 )
+    uberplot.plot_segments(  ax, voronoi_edges,   **theme["voronoi_edges"] )
+    uberplot.scatter_points( ax, voronoi_centers, **theme["voronoi_nodes"] )
 
 ax.set_aspect('equal')
 
