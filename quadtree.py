@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import utils
 import geometry
 from geometry import x,y
 
