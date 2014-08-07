@@ -21,8 +21,8 @@ def edge_in( edge, edges ):
     return (n,m) in edges or (m,n) in edges
 
 
-def neighbours( candidate, polygons ):
-    """Returns the set of candidates in candidates that have an edge in common with the given candidate."""
+def edges_neighbours( candidate, polygons ):
+    """Returns the set of candidates in polygons that have an edge in common with the given candidate."""
     for polygon in polygons:
         if polygon == candidate:
             continue
@@ -42,8 +42,22 @@ def neighbours( candidate, polygons ):
                 yield polygon
                 break
 
+def vertices_neighbours( candidate, polygons ):
+    """Returns the set of candidates in polygon that have a vertex in common with the given candidate."""
+    for polygon in polygons:
+        if polygon == candidate:
+            continue
 
-def dual( triangles ):
+        for vertex in polygon:
+            # We use yield within the loop, because we want to test all the candidate vertex and
+            # return all the matching ones.
+            if vertex in candidate:
+                yield polygon
+                break
+
+
+
+def dual( triangles, neighborhood = edges_neighbours ):
     """Compute the dual Voronoï graph of a triangulation."""
     graph = {}
 
@@ -62,7 +76,7 @@ def dual( triangles ):
         current_node = triangulation.circumcircle(triangle)[0]
         assert( len(current_node) == 2 )
 
-        for neighbor_triangle in neighbours( triangle, triangles ):
+        for neighbor_triangle in neighborhood( triangle, triangles ):
             assert( len(triangle) == 3 )
             assert( not geometry.collinear(*neighbor_triangle) )
             assert( triangulation.is_acute(neighbor_triangle) )

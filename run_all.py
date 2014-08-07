@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #encoding: utf-8
 
+import os
 import sys
 import turtle
 import argparse
@@ -42,21 +43,31 @@ parser.add_argument('-v', "--voronoi", help="Do not compute the Voronoï diagram
 parser.add_argument('-C', "--cache", help="Try to load available precomputed files instead of computing from scratch",
         default=False, action='store_true')
 
-parser.add_argument('-P', "--noplot-penrose", help="Do not plot the Penrose tiling",       default=False, action='store_true')
-parser.add_argument('-T', "--noplot-tour", help="Do not plot the TSP tours",               default=False, action='store_true')
-parser.add_argument('-M', "--noplot-pheromones", help="Do not plot the pheromones matrix", default=False, action='store_true')
-parser.add_argument('-G', "--noplot-triangulation", help="Do not plot the triangulation",  default=False, action='store_true')
-parser.add_argument('-V', "--noplot-voronoi", help="Do not plot the Voronoï diagram",     default=False, action='store_true')
+parser.add_argument('-P', "--noplot-penrose",       help="Do not plot the Penrose tiling",    default=False, action='store_true')
+parser.add_argument('-T', "--noplot-tour",          help="Do not plot the TSP tours",         default=False, action='store_true')
+parser.add_argument('-M', "--noplot-pheromones",    help="Do not plot the pheromones matrix", default=False, action='store_true')
+parser.add_argument('-G', "--noplot-triangulation", help="Do not plot the triangulation",     default=False, action='store_true')
+parser.add_argument('-V', "--noplot-voronoi",       help="Do not plot the Voronoï diagram",   default=False, action='store_true')
 
 ask_for = parser.parse_args()
 
+def set_cache( filename, asked = None ):
+    fname = filename % ask_for.depth
+    if os.path.isfile(fname):
+        return fname
+    else:
+        return asked
+
 if ask_for.cache:
-    ask_for.penrose = "d%i_penrose.segments" % ask_for.depth
-    ask_for.triangulation = "d%i_triangulation.triangles" % ask_for.depth
-    ask_for.notsp = True
-    ask_for.tour = ["d%i_tour.points" % ask_for.depth]
-    ask_for.pheromones = "d%i_pheromones.mat" % ask_for.depth
-    ask_for.voronoi = "d%i_voronoi.graph" % ask_for.depth
+    ask_for.penrose = set_cache( "d%i_penrose.segments", ask_for.penrose )
+    ask_for.triangulation = set_cache("d%i_triangulation.triangles", ask_for.triangulation )
+    ask_for.tour = [set_cache("d%i_tour.points", ask_for.tour )]
+    if ask_for.tour != [None]:
+        ask_for.notsp = True
+    else:
+        ask_for.notsp = False
+    ask_for.pheromones = set_cache("d%i_pheromones.mat", ask_for.pheromones )
+    ask_for.voronoi = set_cache("d%i_voronoi.graph", ask_for.voronoi )
 
 
 error_codes = {"NOTSP":100}
@@ -211,12 +222,16 @@ if ask_for.voronoi:
 
 else:
     LOGN( "Compute the Voronoï diagram of the triangulation" )
-    voronoi_tri_graph = voronoi.dual(triangulated)
+    # Changing the neighborhood to be on vertices instead of edges will not compute the true Voronoï dual graph,
+    # but we want this graph to represent the relations on vertices of the tiles.
+    voronoi_tri_graph = voronoi.dual(triangulated, neighborhood = voronoi.vertices_neighbours)
     # voronoi_tri_edges   = graph.edges_of(voronoi_tri_graph)
     # voronoi_tri_centers = graph.nodes_of(voronoi_tri_graph)
 
     LOGN("\tMerge nodes that are both located within a single diamond" )
     LOG("\t\tMerge",len(voronoi_tri_graph),"nodes")
+    with open("d%i_voronoi_dual.graph" % depth, "w") as fd:
+        graph.write( voronoi_tri_graph, fd )
     voronoi_graph = voronoi.merge_enclosed( voronoi_tri_graph, penrose_segments )
     LOGN("as",len(voronoi_graph),"enclosed nodes")
 
