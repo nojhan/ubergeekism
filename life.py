@@ -3,13 +3,13 @@ from itertools import permutations
 import random
 
 
-def count( node, states, game, graph ):
+def count( node, states, board, graph ):
     """Count the number of neighbours in each given states, in a single pass."""
     nb = {s:0 for s in states}
 
     for neighbor in graph[node]:
         for state in states:
-            if game[neighbor] == state:
+            if board[neighbor] == state:
                 nb[state] += 1
 
     # This is the max size of the neighborhood on a rhomb Penrose tiling (P2)
@@ -75,27 +75,27 @@ class Goucher:
         return next
 
 
-def make_game( graph, state = lambda x: 0 ):
-    """Create a new game board, filled with the results of the calls to the given state function.
+def make_board( graph, state = lambda x: 0 ):
+    """Create a new board board, filled with the results of the calls to the given state function.
     The given graph should be an iterable with all the nodes.
     The given state function should take a node and return a state.
     The default state function returns zero.
     """
-    game = {}
+    board = {}
     for node in graph:
-        game[node] = state(node)
-    return game
+        board[node] = state(node)
+    return board
 
 
 def step( current, graph, rule ):
-    """Compute one generation of the game.
+    """Compute one generation of the board.
     i.e. apply the given rule function on each node of the given graph board.
     The given current board should associate a state to a node.
     The given graph should associate each node with its neighbors.
     The given rule is a function that takes a node, the current board and the graph and return the next state of the node."""
 
     # Defaults to the first state of the rule.
-    next = make_game(graph, lambda x : rule.states[0])
+    next = make_board(graph, lambda x : rule.states[0])
 
     for node in graph:
         next[node] = rule( node, current, graph )
@@ -103,9 +103,9 @@ def step( current, graph, rule ):
     return next
 
 
-def play( game, graph, nb_gen, rule ):
+def play( board, graph, nb_gen, rule ):
     for i in range(nb_gen):
-        game = step( game, graph, rule )
+        board = step( board, graph, rule )
 
 
 if __name__ == "__main__":
@@ -115,21 +115,21 @@ if __name__ == "__main__":
     for i in range(size):
         for j in range(size):
             graph[(i,j)] = []
-            # 2-permutations of 1-axis neighbors directions == all Moore neighborhood vectors around a coordinate.
-            for di,dj in permutations( (-1,0,1), 2 ):
+            # All Moore neighborhood around a coordinate.
+            for di,dj in set(permutations( [0]+[-1,1]*2, 2)):
                 # Use modulo to avoid limits and create a torus.
                 graph[ (i,j) ].append( ( (i+di)%size, (j+dj)%size ) )
 
     rule = Goucher()
     # Fill a board with random states.
-    game = make_game( graph, lambda x : random.choice(rule.states) )
+    board = make_board( graph, lambda x : random.choice(rule.states) )
 
     # Play and print.
     for i in range(5):
         print i
         for i in range(size):
             for j in range(size):
-                print game[(i,j)],
+                print board[(i,j)],
             print ""
-        game = step(game,graph,rule)
+        board = step(board,graph,rule)
 
